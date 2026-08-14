@@ -10,6 +10,8 @@ final class AppContainer {
   let voiceController: VoiceController
   let speechInputController: SpeechInputController
   let voiceSettingsWindowController: VoiceSettingsWindowController
+  let contextState: ContextState
+  let activeApplicationMonitor: ActiveApplicationMonitor
 
   private let appState: AppState
   private let hotKeyManager: HotKeyManager
@@ -19,8 +21,10 @@ final class AppContainer {
   private var debugAutoExitTask: Task<Void, Never>?
 #endif
 
-  init(appState: AppState) {
+  init(appState: AppState, contextState: ContextState) {
     self.appState = appState
+    self.contextState = contextState
+    activeApplicationMonitor = ActiveApplicationMonitor(contextState: contextState)
     let panelController = FloatingPanelController(appState: appState)
     let petStateController = PetStateController()
     let libraryStore = PetLibraryStore()
@@ -73,6 +77,7 @@ final class AppContainer {
   }
 
   func start() {
+    activeApplicationMonitor.start()
     panelController.create()
     petWindowController.start()
 
@@ -95,6 +100,7 @@ final class AppContainer {
   }
 
   func stop() {
+    activeApplicationMonitor.stop()
 #if DEBUG
     petStateStressTask?.cancel()
     petStateStressTask = nil

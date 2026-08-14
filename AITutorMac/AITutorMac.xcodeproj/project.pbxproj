@@ -48,6 +48,12 @@
 		010000000000000000000027 /* SpeechInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002A /* SpeechInputController.swift */; };
 		010000000000000000000028 /* PushToTalkBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002B /* PushToTalkBubbleView.swift */; };
 		010000000000000000000029 /* SpeechInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002C /* SpeechInputTests.swift */; };
+		01000000000000000000002A /* ActiveApplicationSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002D /* ActiveApplicationSnapshot.swift */; };
+		01000000000000000000002B /* ContextState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002E /* ContextState.swift */; };
+		01000000000000000000002C /* TargetApplicationClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002F /* TargetApplicationClassifier.swift */; };
+		01000000000000000000002D /* ActiveApplicationMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000030 /* ActiveApplicationMonitor.swift */; };
+		01000000000000000000002E /* ContextDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000031 /* ContextDebugView.swift */; };
+		01000000000000000000002F /* ContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000032 /* ContextTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,6 +111,12 @@
 		02000000000000000000002A /* SpeechInputController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechInputController.swift; sourceTree = "<group>"; };
 		02000000000000000000002B /* PushToTalkBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushToTalkBubbleView.swift; sourceTree = "<group>"; };
 		02000000000000000000002C /* SpeechInputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechInputTests.swift; sourceTree = "<group>"; };
+		02000000000000000000002D /* ActiveApplicationSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveApplicationSnapshot.swift; sourceTree = "<group>"; };
+		02000000000000000000002E /* ContextState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextState.swift; sourceTree = "<group>"; };
+		02000000000000000000002F /* TargetApplicationClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetApplicationClassifier.swift; sourceTree = "<group>"; };
+		020000000000000000000030 /* ActiveApplicationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveApplicationMonitor.swift; sourceTree = "<group>"; };
+		020000000000000000000031 /* ContextDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextDebugView.swift; sourceTree = "<group>"; };
+		020000000000000000000032 /* ContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +156,7 @@
 				070000000000000000000005 /* UI */,
 				07000000000000000000000C /* Pet */,
 				070000000000000000000015 /* Voice */,
+				070000000000000000000019 /* Context */,
 				070000000000000000000008 /* Utilities */,
 				02000000000000000000000B /* Info.plist */,
 			);
@@ -212,6 +225,7 @@
 				020000000000000000000021 /* CustomPetTests.swift */,
 				020000000000000000000026 /* VoiceTests.swift */,
 				02000000000000000000002C /* SpeechInputTests.swift */,
+				020000000000000000000032 /* ContextTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -360,6 +374,42 @@
 			path = UI;
 			sourceTree = "<group>";
 		};
+		070000000000000000000019 /* Context */ = {
+			isa = PBXGroup;
+			children = (
+				07000000000000000000001A /* Core */,
+				07000000000000000000001B /* AppAwareness */,
+				07000000000000000000001C /* Debug */,
+			);
+			path = Context;
+			sourceTree = "<group>";
+		};
+		07000000000000000000001A /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000002D /* ActiveApplicationSnapshot.swift */,
+				02000000000000000000002E /* ContextState.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		07000000000000000000001B /* AppAwareness */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000030 /* ActiveApplicationMonitor.swift */,
+				02000000000000000000002F /* TargetApplicationClassifier.swift */,
+			);
+			path = AppAwareness;
+			sourceTree = "<group>";
+		};
+		07000000000000000000001C /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000031 /* ContextDebugView.swift */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -492,6 +542,11 @@
 				010000000000000000000026 /* SpeechRecognizerAdapter.swift in Sources */,
 				010000000000000000000027 /* SpeechInputController.swift in Sources */,
 				010000000000000000000028 /* PushToTalkBubbleView.swift in Sources */,
+				01000000000000000000002A /* ActiveApplicationSnapshot.swift in Sources */,
+				01000000000000000000002B /* ContextState.swift in Sources */,
+				01000000000000000000002C /* TargetApplicationClassifier.swift in Sources */,
+				01000000000000000000002D /* ActiveApplicationMonitor.swift in Sources */,
+				01000000000000000000002E /* ContextDebugView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -505,6 +560,7 @@
 				01000000000000000000001E /* CustomPetTests.swift in Sources */,
 				010000000000000000000023 /* VoiceTests.swift in Sources */,
 				010000000000000000000029 /* SpeechInputTests.swift in Sources */,
+				01000000000000000000002F /* ContextTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -5,8 +5,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private let automaticTerminationReason = "白话 AI 菜单栏伴侣需要持续响应快捷键"
 
   let appState = AppState()
+  let contextState = ContextState()
 
-  private lazy var container = AppContainer(appState: appState)
+  private lazy var container = AppContainer(
+    appState: appState,
+    contextState: contextState
+  )
 
   var petStateController: PetStateController {
     container.petStateController

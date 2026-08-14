@@ -8,6 +8,7 @@ struct AITutorApp: App {
     MenuBarExtra("白话 AI", systemImage: "sparkles") {
       MenuBarContentView(
         appState: appDelegate.appState,
+        contextState: appDelegate.contextState,
         showPanel: appDelegate.showPanel,
         hidePanel: appDelegate.hidePanel,
         showPet: appDelegate.showPet,

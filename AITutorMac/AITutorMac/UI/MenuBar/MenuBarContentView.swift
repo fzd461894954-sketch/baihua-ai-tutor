@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MenuBarContentView: View {
   let appState: AppState
+  let contextState: ContextState
   let showPanel: () -> Void
   let hidePanel: () -> Void
   let showPet: () -> Void
@@ -19,6 +20,7 @@ struct MenuBarContentView: View {
 
   var body: some View {
     Text("白话 AI")
+    Text("当前应用：\(contextState.userContextApplication?.displayName ?? "未检测到")")
 
     Divider()
 
@@ -47,6 +49,11 @@ struct MenuBarContentView: View {
     Divider()
 
     Text("吉祥物状态：\(petStateController.currentState.displayName)")
+
+    ContextDebugView(
+      contextState: contextState,
+      classifier: TargetApplicationClassifier()
+    )
 
     Menu("开发测试") {
       Menu("Pet 状态") {
