@@ -12,6 +12,7 @@ struct AITutorApp: App {
         hidePanel: appDelegate.hidePanel,
         showPet: appDelegate.showPet,
         hidePet: appDelegate.hidePet,
+        showPetLibrary: appDelegate.showPetLibrary,
         petStateController: appDelegate.petStateController,
         transitionPetState: appDelegate.transitionPetState,
         terminateApp: appDelegate.terminateApp

@@ -9,12 +9,14 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   }
 
   private let appState: AppState
-  private let pet: PetModel
+  private var pet: PetModel
+  private var petImage: NSImage?
   private let configuration: PetConfiguration
   private let store: PetStore
   private let stateController: PetStateController
   private let animationController: PetAnimationController
   private let onOpenTutor: () -> Void
+  private let onScaleChange: (String, Double) -> Void
 
   private var panel: NSPanel?
   private var bubblePanel: NSPanel?
@@ -26,18 +28,22 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   init(
     appState: AppState,
     pet: PetModel = .officialFlowerBunny,
+    petImage: NSImage? = nil,
     configuration: PetConfiguration = .default,
     store: PetStore = PetStore(),
     stateController: PetStateController,
     animationController: PetAnimationController? = nil,
+    onScaleChange: @escaping (String, Double) -> Void = { _, _ in },
     onOpenTutor: @escaping () -> Void
   ) {
     self.appState = appState
     self.pet = pet
+    self.petImage = petImage
     self.configuration = configuration
     self.store = store
     self.stateController = stateController
     self.animationController = animationController ?? PetAnimationController()
+    self.onScaleChange = onScaleChange
     self.onOpenTutor = onOpenTutor
     scale = configuration.clampedScale(
       store.loadScale(default: configuration.defaultScale)
@@ -86,30 +92,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     panel.acceptsMouseMovedEvents = true
     panel.delegate = self
 
-    let interactionView = PetInteractionView(
-      rootView: PetView(pet: pet, stateController: stateController)
-    )
-    animationController.attach(to: interactionView.animatedLayer)
-    interactionView.onSingleClick = { [weak self] in
-      self?.handleSingleClick()
-    }
-    interactionView.onDoubleClick = { [weak self] in
-      self?.openTutor()
-    }
-    interactionView.onDragBegan = { [weak self] in
-      AppLogger.pet.debug("Pet drag began")
-      self?.hideWelcomeBubble()
-      self?.animationController.setDragging(true)
-    }
-    interactionView.onDragEnded = { [weak self] origin in
-      self?.savePosition(origin)
-      self?.animationController.setDragging(false)
-    }
-    interactionView.onHoverChange = { [weak self] hovered in
-      self?.animationController.setHovered(hovered)
-    }
-    interactionView.menu = makeContextMenu()
-    panel.contentView = interactionView
+    panel.contentView = makeInteractionView()
 
     let visibleFrames = NSScreen.screens.map(\.visibleFrame)
     let fallbackFrame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
@@ -122,6 +105,28 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     panel.setFrameOrigin(origin)
 
     self.panel = panel
+  }
+
+  func reloadPet(_ newPet: PetModel, image: NSImage?) {
+    create()
+    hideWelcomeBubble()
+    animationController.stopAndReset()
+
+    pet = newPet
+    petImage = image
+    setScale(CGFloat(newPet.scale))
+
+    guard let panel else {
+      return
+    }
+    panel.title = newPet.name
+    panel.contentView = makeInteractionView()
+
+    if panel.isVisible, appState.isPetVisible {
+      stateController.start()
+    }
+
+    AppLogger.pet.info("Pet window content reloaded: \(newPet.id, privacy: .public)")
   }
 
   func show() {
@@ -225,6 +230,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     scale = newScale
     panel.setFrame(NSRect(origin: newOrigin, size: newSize), display: true, animate: false)
     store.saveScale(newScale)
+    onScaleChange(pet.id, Double(newScale))
     savePosition(newOrigin)
     positionBubbleIfNeeded()
     AppLogger.pet.info("Pet scale changed to \(Double(newScale), privacy: .public)")
@@ -333,6 +339,37 @@ final class PetWindowController: NSObject, NSWindowDelegate {
         < rhs.visibleFrame.intersection(windowFrame).area
     }
     return (bestScreen ?? NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
+  }
+
+  private func makeInteractionView() -> PetInteractionView<PetView> {
+    let interactionView = PetInteractionView(
+      rootView: PetView(
+        pet: pet,
+        petImage: petImage,
+        stateController: stateController
+      )
+    )
+    animationController.attach(to: interactionView.animatedLayer)
+    interactionView.onSingleClick = { [weak self] in
+      self?.handleSingleClick()
+    }
+    interactionView.onDoubleClick = { [weak self] in
+      self?.openTutor()
+    }
+    interactionView.onDragBegan = { [weak self] in
+      AppLogger.pet.debug("Pet drag began")
+      self?.hideWelcomeBubble()
+      self?.animationController.setDragging(true)
+    }
+    interactionView.onDragEnded = { [weak self] origin in
+      self?.savePosition(origin)
+      self?.animationController.setDragging(false)
+    }
+    interactionView.onHoverChange = { [weak self] hovered in
+      self?.animationController.setHovered(hovered)
+    }
+    interactionView.menu = makeContextMenu()
+    return interactionView
   }
 
   private func makeContextMenu() -> NSMenu {

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct PetView: View {
   let pet: PetModel
+  let petImage: NSImage?
   let stateController: PetStateController
 
   var body: some View {
@@ -27,11 +28,8 @@ struct PetView: View {
 
   @ViewBuilder
   private var petArtwork: some View {
-    if pet.type == .staticImage,
-      let image = NSImage(named: NSImage.Name(pet.assetName)),
-      image.isValid
-    {
-      Image(nsImage: image)
+    if pet.type == .staticImage, let petImage, petImage.isValid {
+      Image(nsImage: petImage)
         .resizable()
         .interpolation(.high)
         .antialiased(true)

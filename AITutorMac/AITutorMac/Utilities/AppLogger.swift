@@ -7,5 +7,6 @@ enum AppLogger {
   static let lifecycle = Logger(subsystem: subsystem, category: "lifecycle")
   static let panel = Logger(subsystem: subsystem, category: "panel")
   static let pet = Logger(subsystem: subsystem, category: "pet")
+  static let customPet = Logger(subsystem: subsystem, category: "custom-pet")
   static let hotKey = Logger(subsystem: subsystem, category: "hotkey")
 }

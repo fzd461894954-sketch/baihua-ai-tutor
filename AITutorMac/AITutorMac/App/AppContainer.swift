@@ -5,6 +5,8 @@ final class AppContainer {
   let panelController: FloatingPanelController
   let petStateController: PetStateController
   let petWindowController: PetWindowController
+  let petLibrary: PetLibrary
+  let petLibraryWindowController: PetLibraryWindowController
 
   private let appState: AppState
   private let hotKeyManager: HotKeyManager
@@ -16,13 +18,32 @@ final class AppContainer {
     self.appState = appState
     let panelController = FloatingPanelController(appState: appState)
     let petStateController = PetStateController()
+    let libraryStore = PetLibraryStore()
+    let imageValidator = PetImageValidator()
+    let petLibrary = PetLibrary(store: libraryStore, validator: imageValidator)
+    let petImporter = PetImporter(validator: imageValidator, store: libraryStore)
     self.panelController = panelController
     self.petStateController = petStateController
-    petWindowController = PetWindowController(
+    self.petLibrary = petLibrary
+
+    let petWindowController = PetWindowController(
       appState: appState,
-      stateController: petStateController
+      pet: petLibrary.currentPet,
+      petImage: petLibrary.image(for: petLibrary.currentPet),
+      stateController: petStateController,
+      onScaleChange: { [weak petLibrary] id, scale in
+        petLibrary?.updateScale(for: id, scale: scale)
+      }
     ) { [weak panelController] in
       panelController?.show()
+    }
+    self.petWindowController = petWindowController
+    petLibraryWindowController = PetLibraryWindowController(
+      library: petLibrary,
+      importer: petImporter
+    )
+    petLibrary.onCurrentPetChange = { [weak petWindowController] pet, image in
+      petWindowController?.reloadPet(pet, image: image)
     }
     hotKeyManager = HotKeyManager()
   }
@@ -52,6 +73,7 @@ final class AppContainer {
     petStateStressTask = nil
 #endif
     hotKeyManager.unregister()
+    petLibraryWindowController.stop()
     petWindowController.stop()
     panelController.stop()
   }

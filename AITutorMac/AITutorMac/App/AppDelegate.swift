@@ -49,6 +49,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     container.petWindowController.hide()
   }
 
+  @objc func showPetLibrary() {
+    container.petLibraryWindowController.show()
+  }
+
   func transitionPetState(to state: PetState) {
     container.petWindowController.show()
     container.petStateController.transition(to: state)

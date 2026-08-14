@@ -1,6 +1,6 @@
 # Pet 资产规范
 
-> 文档状态：STEP 1.6  
+> 文档状态：STEP 1.7
 > 更新日期：2026-08-14
 
 ## 1. 当前官方资产状态
@@ -67,9 +67,9 @@ Profile: sRGB IEC61966-2.1
 5. 在 70%、100%、140% 尺寸下检查清晰度和完整边界。
 6. 本次已完成程序解码、Alpha、缩放和透明窗口检查；更多桌面颜色上的细微边缘观感仍可在最终视觉 QA 中继续核对。
 
-## 5. 未来用户自定义 Pet 最小规范
+## 5. 用户自定义 Pet V1 正式规范
 
-`03_CUSTOM_PET` 的最小用户入口将是一张透明 PNG。导入后，软件可以为它自动提供：
+`03_CUSTOM_PET` 的最小用户入口是一张 PNG。推荐透明 RGBA PNG；完全不透明的 PNG 会显示矩形背景警告，但用户可以选择继续导入。导入后，软件自动为它提供：
 
 - Idle breathing
 - 轻微 floating
@@ -78,8 +78,22 @@ Profile: sRGB IEC61966-2.1
 - Scale
 - Generic Success bounce
 - Generic Warning shake
+- 八种通用 `PetState` 的 Badge、Bubble 与程序动画
 
-未来导入层应检查：可解码、有效尺寸、有 Alpha、不超过合理文件/像素上限，并在本地安全保存。STEP 1.5 不开发导入、角色切换、WebP 解码策略、Sprite Sheet 或骨骼动画。
+正式导入要求：
+
+| 项目 | V1 行为 |
+|---|---|
+| 文件类型 | 仅单帧 PNG；校验扩展名、PNG signature 和 ImageIO 类型 |
+| 最小尺寸 | 宽和高均至少 128 px |
+| 安全上限 | 单边 16,000 px，总像素 100,000,000 |
+| Alpha | 扫描实际透明像素；无透明像素时警告但不拒绝 |
+| 大图 | 创建最长边不超过 2048 px 的 sRGB 内部副本 |
+| 缩略图 | 创建最长边不超过 256 px 的透明 PNG |
+| 原始文件 | 只读，不修改、不重命名、不覆盖、不删除 |
+| 本地位置 | Application Support 下的 `Pets/user_<UUID>/` |
+
+用户文件不进入 `Assets.xcassets`。WebP、GIF、APNG、SVG、Sprite Sheet、Live2D、自动抠图和 AI 生成角色不属于 STEP 1.7。
 
 ## 6. 透明点击区技术债
 

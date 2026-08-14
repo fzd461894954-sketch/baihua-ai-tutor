@@ -7,6 +7,7 @@ struct MenuBarContentView: View {
   let hidePanel: () -> Void
   let showPet: () -> Void
   let hidePet: () -> Void
+  let showPetLibrary: () -> Void
   let petStateController: PetStateController
   let transitionPetState: (PetState) -> Void
   let terminateApp: () -> Void
@@ -27,6 +28,10 @@ struct MenuBarContentView: View {
       .disabled(appState.isPetVisible)
     Button("隐藏吉祥物", action: hidePet)
       .disabled(!appState.isPetVisible)
+
+    Divider()
+
+    Button("我的桌面老师…", action: showPetLibrary)
 
 #if DEBUG
     Divider()

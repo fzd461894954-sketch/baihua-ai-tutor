@@ -29,6 +29,14 @@
 		010000000000000000000014 /* PetState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000017 /* PetState.swift */; };
 		010000000000000000000015 /* PetStateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000018 /* PetStateController.swift */; };
 		010000000000000000000016 /* PetStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000019 /* PetStateTests.swift */; };
+		010000000000000000000017 /* PetNameValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000001A /* PetNameValidator.swift */; };
+		010000000000000000000018 /* PetImageValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000001B /* PetImageValidator.swift */; };
+		010000000000000000000019 /* PetLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000001C /* PetLibraryStore.swift */; };
+		01000000000000000000001A /* PetImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000001D /* PetImporter.swift */; };
+		01000000000000000000001B /* PetLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000001E /* PetLibrary.swift */; };
+		01000000000000000000001C /* PetLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000001F /* PetLibraryView.swift */; };
+		01000000000000000000001D /* PetLibraryWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000020 /* PetLibraryWindowController.swift */; };
+		01000000000000000000001E /* CustomPetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000021 /* CustomPetTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +75,14 @@
 		020000000000000000000017 /* PetState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetState.swift; sourceTree = "<group>"; };
 		020000000000000000000018 /* PetStateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetStateController.swift; sourceTree = "<group>"; };
 		020000000000000000000019 /* PetStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetStateTests.swift; sourceTree = "<group>"; };
+		02000000000000000000001A /* PetNameValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetNameValidator.swift; sourceTree = "<group>"; };
+		02000000000000000000001B /* PetImageValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetImageValidator.swift; sourceTree = "<group>"; };
+		02000000000000000000001C /* PetLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetLibraryStore.swift; sourceTree = "<group>"; };
+		02000000000000000000001D /* PetImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetImporter.swift; sourceTree = "<group>"; };
+		02000000000000000000001E /* PetLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetLibrary.swift; sourceTree = "<group>"; };
+		02000000000000000000001F /* PetLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetLibraryView.swift; sourceTree = "<group>"; };
+		020000000000000000000020 /* PetLibraryWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetLibraryWindowController.swift; sourceTree = "<group>"; };
+		020000000000000000000021 /* CustomPetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomPetTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -170,6 +186,7 @@
 				02000000000000000000000A /* AppStateTests.swift */,
 				020000000000000000000015 /* PetCoreTests.swift */,
 				020000000000000000000019 /* PetStateTests.swift */,
+				020000000000000000000021 /* CustomPetTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -196,6 +213,7 @@
 			children = (
 				07000000000000000000000D /* Core */,
 				070000000000000000000012 /* State */,
+				070000000000000000000013 /* CustomPet */,
 				07000000000000000000000E /* Window */,
 				07000000000000000000000F /* Views */,
 				070000000000000000000010 /* Animation */,
@@ -253,6 +271,28 @@
 				020000000000000000000018 /* PetStateController.swift */,
 			);
 			path = State;
+			sourceTree = "<group>";
+		};
+		070000000000000000000013 /* CustomPet */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000001A /* PetNameValidator.swift */,
+				02000000000000000000001B /* PetImageValidator.swift */,
+				02000000000000000000001C /* PetLibraryStore.swift */,
+				02000000000000000000001D /* PetImporter.swift */,
+				02000000000000000000001E /* PetLibrary.swift */,
+				070000000000000000000014 /* UI */,
+			);
+			path = CustomPet;
+			sourceTree = "<group>";
+		};
+		070000000000000000000014 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000001F /* PetLibraryView.swift */,
+				020000000000000000000020 /* PetLibraryWindowController.swift */,
+			);
+			path = UI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -371,6 +411,13 @@
 				010000000000000000000011 /* PetAnimationController.swift in Sources */,
 				010000000000000000000014 /* PetState.swift in Sources */,
 				010000000000000000000015 /* PetStateController.swift in Sources */,
+				010000000000000000000017 /* PetNameValidator.swift in Sources */,
+				010000000000000000000018 /* PetImageValidator.swift in Sources */,
+				010000000000000000000019 /* PetLibraryStore.swift in Sources */,
+				01000000000000000000001A /* PetImporter.swift in Sources */,
+				01000000000000000000001B /* PetLibrary.swift in Sources */,
+				01000000000000000000001C /* PetLibraryView.swift in Sources */,
+				01000000000000000000001D /* PetLibraryWindowController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -381,6 +428,7 @@
 				01000000000000000000000A /* AppStateTests.swift in Sources */,
 				010000000000000000000012 /* PetCoreTests.swift in Sources */,
 				010000000000000000000016 /* PetStateTests.swift in Sources */,
+				01000000000000000000001E /* CustomPetTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
