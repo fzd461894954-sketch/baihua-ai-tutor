@@ -12,6 +12,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     container.petStateController
   }
 
+  var voiceController: VoiceController {
+    container.voiceController
+  }
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApplication.shared.setActivationPolicy(.accessory)
     ProcessInfo.processInfo.disableAutomaticTermination(
@@ -51,6 +55,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc func showPetLibrary() {
     container.petLibraryWindowController.show()
+  }
+
+  @objc func showVoiceSettings() {
+    container.voiceSettingsWindowController.show()
+  }
+
+  func speak(_ text: String) {
+    container.voiceController.speak(text: text)
+  }
+
+  @objc func stopSpeaking() {
+    container.voiceController.stop()
   }
 
   func transitionPetState(to state: PetState) {

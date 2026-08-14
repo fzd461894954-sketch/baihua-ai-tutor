@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 
 @MainActor
 final class AppContainer {
@@ -7,11 +7,15 @@ final class AppContainer {
   let petWindowController: PetWindowController
   let petLibrary: PetLibrary
   let petLibraryWindowController: PetLibraryWindowController
+  let voiceController: VoiceController
+  let voiceSettingsWindowController: VoiceSettingsWindowController
 
   private let appState: AppState
   private let hotKeyManager: HotKeyManager
 #if DEBUG
   private var petStateStressTask: Task<Void, Never>?
+  private var voiceStressTask: Task<Void, Never>?
+  private var debugAutoExitTask: Task<Void, Never>?
 #endif
 
   init(appState: AppState) {
@@ -25,6 +29,9 @@ final class AppContainer {
     self.panelController = panelController
     self.petStateController = petStateController
     self.petLibrary = petLibrary
+
+    let voiceController = VoiceController(petStateController: petStateController)
+    self.voiceController = voiceController
 
     let petWindowController = PetWindowController(
       appState: appState,
@@ -41,6 +48,9 @@ final class AppContainer {
     petLibraryWindowController = PetLibraryWindowController(
       library: petLibrary,
       importer: petImporter
+    )
+    voiceSettingsWindowController = VoiceSettingsWindowController(
+      voiceController: voiceController
     )
     petLibrary.onCurrentPetChange = { [weak petWindowController] pet, image in
       petWindowController?.reloadPet(pet, image: image)
@@ -64,6 +74,9 @@ final class AppContainer {
 #if DEBUG
     applyPetStateDebugArgumentIfRequested()
     startPetStateStressTestIfRequested()
+    applyVoiceDebugArgumentIfRequested()
+    startVoiceStressTestIfRequested()
+    scheduleDebugAutoExitIfRequested()
 #endif
   }
 
@@ -71,8 +84,14 @@ final class AppContainer {
 #if DEBUG
     petStateStressTask?.cancel()
     petStateStressTask = nil
+    voiceStressTask?.cancel()
+    voiceStressTask = nil
+    debugAutoExitTask?.cancel()
+    debugAutoExitTask = nil
 #endif
+    voiceController.stop()
     hotKeyManager.unregister()
+    voiceSettingsWindowController.stop()
     petLibraryWindowController.stop()
     petWindowController.stop()
     panelController.stop()
@@ -125,6 +144,55 @@ final class AppContainer {
       self?.petStateController.transition(to: .idle)
       AppLogger.pet.info("Pet state stress test completed: 30 transitions")
       self?.petStateStressTask = nil
+    }
+  }
+
+  private func applyVoiceDebugArgumentIfRequested() {
+    let prefix = "--voice-text="
+    guard
+      let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix(prefix) })
+    else {
+      return
+    }
+
+    voiceController.speak(text: String(argument.dropFirst(prefix.count)))
+  }
+
+  private func startVoiceStressTestIfRequested() {
+    guard ProcessInfo.processInfo.arguments.contains("--voice-stress-test") else {
+      return
+    }
+
+    voiceStressTask = Task { [weak self] in
+      for index in 0..<30 {
+        guard !Task.isCancelled else {
+          return
+        }
+        self?.voiceController.speak(text: "语音替换压力测试 \(index + 1)")
+        await Task.yield()
+      }
+      AppLogger.voice.info("System speech replacement stress test completed: 30 requests")
+      self?.voiceStressTask = nil
+    }
+  }
+
+  private func scheduleDebugAutoExitIfRequested() {
+    let prefix = "--debug-auto-exit-after="
+    guard
+      let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
+      let seconds = Double(argument.dropFirst(prefix.count)),
+      seconds > 0
+    else {
+      return
+    }
+
+    debugAutoExitTask = Task {
+      do {
+        try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+      } catch {
+        return
+      }
+      NSApplication.shared.terminate(nil)
     }
   }
 #endif

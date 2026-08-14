@@ -37,6 +37,11 @@
 		01000000000000000000001C /* PetLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000001F /* PetLibraryView.swift */; };
 		01000000000000000000001D /* PetLibraryWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000020 /* PetLibraryWindowController.swift */; };
 		01000000000000000000001E /* CustomPetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000021 /* CustomPetTests.swift */; };
+		01000000000000000000001F /* SpeechConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000022 /* SpeechConfiguration.swift */; };
+		010000000000000000000020 /* VoicePreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000023 /* VoicePreferencesStore.swift */; };
+		010000000000000000000021 /* VoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000024 /* VoiceController.swift */; };
+		010000000000000000000022 /* VoiceDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000025 /* VoiceDebugView.swift */; };
+		010000000000000000000023 /* VoiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000026 /* VoiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,6 +88,11 @@
 		02000000000000000000001F /* PetLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetLibraryView.swift; sourceTree = "<group>"; };
 		020000000000000000000020 /* PetLibraryWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetLibraryWindowController.swift; sourceTree = "<group>"; };
 		020000000000000000000021 /* CustomPetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomPetTests.swift; sourceTree = "<group>"; };
+		020000000000000000000022 /* SpeechConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechConfiguration.swift; sourceTree = "<group>"; };
+		020000000000000000000023 /* VoicePreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoicePreferencesStore.swift; sourceTree = "<group>"; };
+		020000000000000000000024 /* VoiceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceController.swift; sourceTree = "<group>"; };
+		020000000000000000000025 /* VoiceDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceDebugView.swift; sourceTree = "<group>"; };
+		020000000000000000000026 /* VoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +131,7 @@
 				070000000000000000000004 /* Shell */,
 				070000000000000000000005 /* UI */,
 				07000000000000000000000C /* Pet */,
+				070000000000000000000015 /* Voice */,
 				070000000000000000000008 /* Utilities */,
 				02000000000000000000000B /* Info.plist */,
 			);
@@ -187,6 +198,7 @@
 				020000000000000000000015 /* PetCoreTests.swift */,
 				020000000000000000000019 /* PetStateTests.swift */,
 				020000000000000000000021 /* CustomPetTests.swift */,
+				020000000000000000000026 /* VoiceTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -291,6 +303,25 @@
 			children = (
 				02000000000000000000001F /* PetLibraryView.swift */,
 				020000000000000000000020 /* PetLibraryWindowController.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		070000000000000000000015 /* Voice */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000024 /* VoiceController.swift */,
+				020000000000000000000022 /* SpeechConfiguration.swift */,
+				020000000000000000000023 /* VoicePreferencesStore.swift */,
+				070000000000000000000016 /* UI */,
+			);
+			path = Voice;
+			sourceTree = "<group>";
+		};
+		070000000000000000000016 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000025 /* VoiceDebugView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -418,6 +449,10 @@
 				01000000000000000000001B /* PetLibrary.swift in Sources */,
 				01000000000000000000001C /* PetLibraryView.swift in Sources */,
 				01000000000000000000001D /* PetLibraryWindowController.swift in Sources */,
+				01000000000000000000001F /* SpeechConfiguration.swift in Sources */,
+				010000000000000000000020 /* VoicePreferencesStore.swift in Sources */,
+				010000000000000000000021 /* VoiceController.swift in Sources */,
+				010000000000000000000022 /* VoiceDebugView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -429,6 +464,7 @@
 				010000000000000000000012 /* PetCoreTests.swift in Sources */,
 				010000000000000000000016 /* PetStateTests.swift in Sources */,
 				01000000000000000000001E /* CustomPetTests.swift in Sources */,
+				010000000000000000000023 /* VoiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -13,8 +13,12 @@ struct AITutorApp: App {
         showPet: appDelegate.showPet,
         hidePet: appDelegate.hidePet,
         showPetLibrary: appDelegate.showPetLibrary,
+        showVoiceSettings: appDelegate.showVoiceSettings,
         petStateController: appDelegate.petStateController,
+        voiceController: appDelegate.voiceController,
         transitionPetState: appDelegate.transitionPetState,
+        speak: appDelegate.speak,
+        stopSpeaking: appDelegate.stopSpeaking,
         terminateApp: appDelegate.terminateApp
       )
     }

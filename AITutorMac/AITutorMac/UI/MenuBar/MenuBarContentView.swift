@@ -8,8 +8,12 @@ struct MenuBarContentView: View {
   let showPet: () -> Void
   let hidePet: () -> Void
   let showPetLibrary: () -> Void
+  let showVoiceSettings: () -> Void
   let petStateController: PetStateController
+  let voiceController: VoiceController
   let transitionPetState: (PetState) -> Void
+  let speak: (String) -> Void
+  let stopSpeaking: () -> Void
   let terminateApp: () -> Void
 
   var body: some View {
@@ -32,6 +36,7 @@ struct MenuBarContentView: View {
     Divider()
 
     Button("我的桌面老师…", action: showPetLibrary)
+    Button("语音设置…", action: showVoiceSettings)
 
 #if DEBUG
     Divider()
@@ -52,6 +57,14 @@ struct MenuBarContentView: View {
             )
           }
         }
+      }
+
+      Menu("语音") {
+        Button("播放测试句") {
+          speak("它现在正在给这个项目安装运行所需要的软件。")
+        }
+        Button("停止朗读", action: stopSpeaking)
+          .disabled(!voiceController.isActive)
       }
     }
 #endif
