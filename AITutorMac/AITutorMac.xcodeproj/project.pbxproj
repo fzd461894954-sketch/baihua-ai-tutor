@@ -1,0 +1,533 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		010000000000000000000001 /* AITutorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000001 /* AITutorApp.swift */; };
+		010000000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000002 /* AppDelegate.swift */; };
+		010000000000000000000003 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000003 /* AppContainer.swift */; };
+		010000000000000000000004 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000004 /* AppState.swift */; };
+		010000000000000000000005 /* HotKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000005 /* HotKeyManager.swift */; };
+		010000000000000000000006 /* FloatingPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000006 /* FloatingPanelController.swift */; };
+		010000000000000000000007 /* FloatingPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000007 /* FloatingPanelView.swift */; };
+		010000000000000000000008 /* MenuBarContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000008 /* MenuBarContentView.swift */; };
+		010000000000000000000009 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000009 /* AppLogger.swift */; };
+		01000000000000000000000A /* AppStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000000A /* AppStateTests.swift */; };
+		01000000000000000000000B /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02000000000000000000000E /* Carbon.framework */; };
+		01000000000000000000000C /* PetModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000000F /* PetModel.swift */; };
+		01000000000000000000000D /* PetConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000010 /* PetConfiguration.swift */; };
+		01000000000000000000000E /* PetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000011 /* PetStore.swift */; };
+		01000000000000000000000F /* PetWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000012 /* PetWindowController.swift */; };
+		010000000000000000000010 /* PetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000013 /* PetView.swift */; };
+		010000000000000000000011 /* PetAnimationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000014 /* PetAnimationController.swift */; };
+		010000000000000000000012 /* PetCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000015 /* PetCoreTests.swift */; };
+		010000000000000000000013 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000016 /* Assets.xcassets */; };
+		010000000000000000000014 /* PetState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000017 /* PetState.swift */; };
+		010000000000000000000015 /* PetStateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000018 /* PetStateController.swift */; };
+		010000000000000000000016 /* PetStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000019 /* PetStateTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		030000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 040000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 050000000000000000000001;
+			remoteInfo = AITutorMac;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		020000000000000000000001 /* AITutorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITutorApp.swift; sourceTree = "<group>"; };
+		020000000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		020000000000000000000003 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
+		020000000000000000000004 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		020000000000000000000005 /* HotKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyManager.swift; sourceTree = "<group>"; };
+		020000000000000000000006 /* FloatingPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanelController.swift; sourceTree = "<group>"; };
+		020000000000000000000007 /* FloatingPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanelView.swift; sourceTree = "<group>"; };
+		020000000000000000000008 /* MenuBarContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarContentView.swift; sourceTree = "<group>"; };
+		020000000000000000000009 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		02000000000000000000000A /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
+		02000000000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		02000000000000000000000C /* AITutorMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AITutorMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		02000000000000000000000D /* AITutorMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AITutorMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		02000000000000000000000E /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
+		02000000000000000000000F /* PetModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetModel.swift; sourceTree = "<group>"; };
+		020000000000000000000010 /* PetConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetConfiguration.swift; sourceTree = "<group>"; };
+		020000000000000000000011 /* PetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetStore.swift; sourceTree = "<group>"; };
+		020000000000000000000012 /* PetWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetWindowController.swift; sourceTree = "<group>"; };
+		020000000000000000000013 /* PetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetView.swift; sourceTree = "<group>"; };
+		020000000000000000000014 /* PetAnimationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetAnimationController.swift; sourceTree = "<group>"; };
+		020000000000000000000015 /* PetCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetCoreTests.swift; sourceTree = "<group>"; };
+		020000000000000000000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		020000000000000000000017 /* PetState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetState.swift; sourceTree = "<group>"; };
+		020000000000000000000018 /* PetStateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetStateController.swift; sourceTree = "<group>"; };
+		020000000000000000000019 /* PetStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetStateTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		060000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				01000000000000000000000B /* Carbon.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		060000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		070000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				070000000000000000000002 /* AITutorMac */,
+				070000000000000000000009 /* AITutorMacTests */,
+				07000000000000000000000A /* Frameworks */,
+				07000000000000000000000B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		070000000000000000000002 /* AITutorMac */ = {
+			isa = PBXGroup;
+			children = (
+				070000000000000000000003 /* App */,
+				070000000000000000000004 /* Shell */,
+				070000000000000000000005 /* UI */,
+				07000000000000000000000C /* Pet */,
+				070000000000000000000008 /* Utilities */,
+				02000000000000000000000B /* Info.plist */,
+			);
+			path = AITutorMac;
+			sourceTree = "<group>";
+		};
+		070000000000000000000003 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000001 /* AITutorApp.swift */,
+				020000000000000000000002 /* AppDelegate.swift */,
+				020000000000000000000003 /* AppContainer.swift */,
+				020000000000000000000004 /* AppState.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		070000000000000000000004 /* Shell */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000005 /* HotKeyManager.swift */,
+			);
+			path = Shell;
+			sourceTree = "<group>";
+		};
+		070000000000000000000005 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				070000000000000000000006 /* FloatingPanel */,
+				070000000000000000000007 /* MenuBar */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		070000000000000000000006 /* FloatingPanel */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000006 /* FloatingPanelController.swift */,
+				020000000000000000000007 /* FloatingPanelView.swift */,
+			);
+			path = FloatingPanel;
+			sourceTree = "<group>";
+		};
+		070000000000000000000007 /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000008 /* MenuBarContentView.swift */,
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		070000000000000000000008 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000009 /* AppLogger.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		070000000000000000000009 /* AITutorMacTests */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000000A /* AppStateTests.swift */,
+				020000000000000000000015 /* PetCoreTests.swift */,
+				020000000000000000000019 /* PetStateTests.swift */,
+			);
+			path = AITutorMacTests;
+			sourceTree = "<group>";
+		};
+		07000000000000000000000A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000000E /* Carbon.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		07000000000000000000000B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000000C /* AITutorMac.app */,
+				02000000000000000000000D /* AITutorMacTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		07000000000000000000000C /* Pet */ = {
+			isa = PBXGroup;
+			children = (
+				07000000000000000000000D /* Core */,
+				070000000000000000000012 /* State */,
+				07000000000000000000000E /* Window */,
+				07000000000000000000000F /* Views */,
+				070000000000000000000010 /* Animation */,
+				070000000000000000000011 /* Resources */,
+			);
+			path = Pet;
+			sourceTree = "<group>";
+		};
+		07000000000000000000000D /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000000F /* PetModel.swift */,
+				020000000000000000000010 /* PetConfiguration.swift */,
+				020000000000000000000011 /* PetStore.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		07000000000000000000000E /* Window */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000012 /* PetWindowController.swift */,
+			);
+			path = Window;
+			sourceTree = "<group>";
+		};
+		07000000000000000000000F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000013 /* PetView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		070000000000000000000010 /* Animation */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000014 /* PetAnimationController.swift */,
+			);
+			path = Animation;
+			sourceTree = "<group>";
+		};
+		070000000000000000000011 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000016 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		070000000000000000000012 /* State */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000017 /* PetState.swift */,
+				020000000000000000000018 /* PetStateController.swift */,
+			);
+			path = State;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		050000000000000000000001 /* AITutorMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 080000000000000000000002 /* Build configuration list for PBXNativeTarget "AITutorMac" */;
+			buildPhases = (
+				090000000000000000000001 /* Sources */,
+				060000000000000000000001 /* Frameworks */,
+				0A0000000000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AITutorMac;
+			productName = AITutorMac;
+			productReference = 02000000000000000000000C /* AITutorMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		050000000000000000000002 /* AITutorMacTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 080000000000000000000003 /* Build configuration list for PBXNativeTarget "AITutorMacTests" */;
+			buildPhases = (
+				090000000000000000000002 /* Sources */,
+				060000000000000000000002 /* Frameworks */,
+				0A0000000000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0B0000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = AITutorMacTests;
+			productName = AITutorMacTests;
+			productReference = 02000000000000000000000D /* AITutorMacTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		040000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2630;
+				LastUpgradeCheck = 2630;
+				TargetAttributes = {
+					050000000000000000000001 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					050000000000000000000002 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = 050000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = 080000000000000000000001 /* Build configuration list for PBXProject "AITutorMac" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 070000000000000000000001;
+			productRefGroup = 07000000000000000000000B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				050000000000000000000001 /* AITutorMac */,
+				050000000000000000000002 /* AITutorMacTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0A0000000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				010000000000000000000013 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0A0000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		090000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				010000000000000000000001 /* AITutorApp.swift in Sources */,
+				010000000000000000000002 /* AppDelegate.swift in Sources */,
+				010000000000000000000003 /* AppContainer.swift in Sources */,
+				010000000000000000000004 /* AppState.swift in Sources */,
+				010000000000000000000005 /* HotKeyManager.swift in Sources */,
+				010000000000000000000006 /* FloatingPanelController.swift in Sources */,
+				010000000000000000000007 /* FloatingPanelView.swift in Sources */,
+				010000000000000000000008 /* MenuBarContentView.swift in Sources */,
+				010000000000000000000009 /* AppLogger.swift in Sources */,
+				01000000000000000000000C /* PetModel.swift in Sources */,
+				01000000000000000000000D /* PetConfiguration.swift in Sources */,
+				01000000000000000000000E /* PetStore.swift in Sources */,
+				01000000000000000000000F /* PetWindowController.swift in Sources */,
+				010000000000000000000010 /* PetView.swift in Sources */,
+				010000000000000000000011 /* PetAnimationController.swift in Sources */,
+				010000000000000000000014 /* PetState.swift in Sources */,
+				010000000000000000000015 /* PetStateController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		090000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				01000000000000000000000A /* AppStateTests.swift in Sources */,
+				010000000000000000000012 /* PetCoreTests.swift in Sources */,
+				010000000000000000000016 /* PetStateTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0B0000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 050000000000000000000001 /* AITutorMac */;
+			targetProxy = 030000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0C0000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		0C0000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+		};
+			name = Release;
+		};
+		0C0000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AITutorMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.baihuaai.AITutorMac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		0C0000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AITutorMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.baihuaai.AITutorMac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		0C0000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.baihuaai.AITutorMacTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AITutorMac.app/Contents/MacOS/AITutorMac";
+			};
+			name = Debug;
+		};
+		0C0000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.baihuaai.AITutorMacTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AITutorMac.app/Contents/MacOS/AITutorMac";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		080000000000000000000001 /* Build configuration list for PBXProject "AITutorMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C0000000000000000000001 /* Debug */,
+				0C0000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		080000000000000000000002 /* Build configuration list for PBXNativeTarget "AITutorMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C0000000000000000000003 /* Debug */,
+				0C0000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		080000000000000000000003 /* Build configuration list for PBXNativeTarget "AITutorMacTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C0000000000000000000005 /* Debug */,
+				0C0000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 040000000000000000000001 /* Project object */;
+}
