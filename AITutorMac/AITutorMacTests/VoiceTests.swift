@@ -191,18 +191,24 @@ final class VoiceTests: XCTestCase {
     defer { defaults.removePersistentDomain(forName: suiteName) }
     let appState = AppState()
     let pet = PetStateController()
+    let speech = MockSpeechSynthesizer()
+    let voice = VoiceController(petStateController: pet, synthesizer: speech)
+    let speechInputController = SpeechInputController(
+      authorizationController: SpeechAuthorizationController(),
+      recognizerFactory: SystemSpeechRecognizerFactory(),
+      voiceOutputController: voice
+    )
     let window = PetWindowController(
       appState: appState,
       pet: .officialFlowerBunny,
       petImage: NSImage(named: "official_flower_bunny"),
       store: PetStore(defaults: defaults),
       stateController: pet,
+      speechInputController: speechInputController,
       animationController: PetAnimationController(reduceMotionProvider: { false }),
       onOpenTutor: {}
     )
     defer { window.stop() }
-    let speech = MockSpeechSynthesizer()
-    let voice = VoiceController(petStateController: pet, synthesizer: speech)
     let customPet = PetModel(
       id: "user_voice_test",
       name: "自定义老师",

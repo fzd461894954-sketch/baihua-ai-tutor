@@ -42,6 +42,12 @@
 		010000000000000000000021 /* VoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000024 /* VoiceController.swift */; };
 		010000000000000000000022 /* VoiceDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000025 /* VoiceDebugView.swift */; };
 		010000000000000000000023 /* VoiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000026 /* VoiceTests.swift */; };
+		010000000000000000000024 /* VoiceInputState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000027 /* VoiceInputState.swift */; };
+		010000000000000000000025 /* SpeechAuthorizationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000028 /* SpeechAuthorizationController.swift */; };
+		010000000000000000000026 /* SpeechRecognizerAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000029 /* SpeechRecognizerAdapter.swift */; };
+		010000000000000000000027 /* SpeechInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002A /* SpeechInputController.swift */; };
+		010000000000000000000028 /* PushToTalkBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002B /* PushToTalkBubbleView.swift */; };
+		010000000000000000000029 /* SpeechInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000002C /* SpeechInputTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +99,12 @@
 		020000000000000000000024 /* VoiceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceController.swift; sourceTree = "<group>"; };
 		020000000000000000000025 /* VoiceDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceDebugView.swift; sourceTree = "<group>"; };
 		020000000000000000000026 /* VoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTests.swift; sourceTree = "<group>"; };
+		020000000000000000000027 /* VoiceInputState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputState.swift; sourceTree = "<group>"; };
+		020000000000000000000028 /* SpeechAuthorizationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechAuthorizationController.swift; sourceTree = "<group>"; };
+		020000000000000000000029 /* SpeechRecognizerAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizerAdapter.swift; sourceTree = "<group>"; };
+		02000000000000000000002A /* SpeechInputController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechInputController.swift; sourceTree = "<group>"; };
+		02000000000000000000002B /* PushToTalkBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushToTalkBubbleView.swift; sourceTree = "<group>"; };
+		02000000000000000000002C /* SpeechInputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechInputTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -199,6 +211,7 @@
 				020000000000000000000019 /* PetStateTests.swift */,
 				020000000000000000000021 /* CustomPetTests.swift */,
 				020000000000000000000026 /* VoiceTests.swift */,
+				02000000000000000000002C /* SpeechInputTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -313,6 +326,7 @@
 				020000000000000000000024 /* VoiceController.swift */,
 				020000000000000000000022 /* SpeechConfiguration.swift */,
 				020000000000000000000023 /* VoicePreferencesStore.swift */,
+				070000000000000000000017 /* Input */,
 				070000000000000000000016 /* UI */,
 			);
 			path = Voice;
@@ -322,6 +336,26 @@
 			isa = PBXGroup;
 			children = (
 				020000000000000000000025 /* VoiceDebugView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		070000000000000000000017 /* Input */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000027 /* VoiceInputState.swift */,
+				020000000000000000000028 /* SpeechAuthorizationController.swift */,
+				020000000000000000000029 /* SpeechRecognizerAdapter.swift */,
+				02000000000000000000002A /* SpeechInputController.swift */,
+				070000000000000000000018 /* UI */,
+			);
+			path = Input;
+			sourceTree = "<group>";
+		};
+		070000000000000000000018 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000002B /* PushToTalkBubbleView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -453,6 +487,11 @@
 				010000000000000000000020 /* VoicePreferencesStore.swift in Sources */,
 				010000000000000000000021 /* VoiceController.swift in Sources */,
 				010000000000000000000022 /* VoiceDebugView.swift in Sources */,
+				010000000000000000000024 /* VoiceInputState.swift in Sources */,
+				010000000000000000000025 /* SpeechAuthorizationController.swift in Sources */,
+				010000000000000000000026 /* SpeechRecognizerAdapter.swift in Sources */,
+				010000000000000000000027 /* SpeechInputController.swift in Sources */,
+				010000000000000000000028 /* PushToTalkBubbleView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -465,6 +504,7 @@
 				010000000000000000000016 /* PetStateTests.swift in Sources */,
 				01000000000000000000001E /* CustomPetTests.swift in Sources */,
 				010000000000000000000023 /* VoiceTests.swift in Sources */,
+				010000000000000000000029 /* SpeechInputTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

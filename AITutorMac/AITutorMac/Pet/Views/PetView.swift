@@ -5,25 +5,37 @@ struct PetView: View {
   let pet: PetModel
   let petImage: NSImage?
   let stateController: PetStateController
+  let speechInputController: SpeechInputController
 
   var body: some View {
-    ZStack(alignment: .topTrailing) {
+    ZStack {
       petArtwork
 
-      if let symbolName = stateController.currentState.badgeSystemImageName {
-        PetStateBadgeView(
-          state: stateController.currentState,
-          symbolName: symbolName
-        )
-        .padding(4)
+      VStack {
+        HStack {
+          if speechInputController.isMicrophoneActive {
+            VoiceInputBadgeView()
+          }
+
+          Spacer()
+
+          if let symbolName = stateController.currentState.badgeSystemImageName {
+            PetStateBadgeView(
+              state: stateController.currentState,
+              symbolName: symbolName
+            )
+          }
+        }
+        Spacer()
       }
+      .padding(4)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .contentShape(Rectangle())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("桌面吉祥物，\(pet.name)")
     .accessibilityValue(stateController.currentState.displayName)
-    .accessibilityHint("单击查看当前状态，双击打开教学窗口")
+    .accessibilityHint("单击打开语音操作，双击打开教学窗口")
   }
 
   @ViewBuilder
@@ -37,6 +49,22 @@ struct PetView: View {
     } else {
       PetAssetPlaceholder(petName: pet.name)
     }
+  }
+}
+
+private struct VoiceInputBadgeView: View {
+  var body: some View {
+    Image(systemName: "mic.fill")
+      .font(.system(size: 13, weight: .bold))
+      .foregroundStyle(.white)
+      .frame(width: 27, height: 27)
+      .background(.red, in: Circle())
+      .overlay {
+        Circle()
+          .stroke(.white.opacity(0.8), lineWidth: 1.5)
+      }
+      .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+      .accessibilityLabel("正在使用麦克风")
   }
 }
 

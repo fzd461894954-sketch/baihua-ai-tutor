@@ -9,5 +9,6 @@ enum AppLogger {
   static let pet = Logger(subsystem: subsystem, category: "pet")
   static let customPet = Logger(subsystem: subsystem, category: "custom-pet")
   static let voice = Logger(subsystem: subsystem, category: "voice")
+  static let voiceInput = Logger(subsystem: subsystem, category: "voice-input")
   static let hotKey = Logger(subsystem: subsystem, category: "hotkey")
 }

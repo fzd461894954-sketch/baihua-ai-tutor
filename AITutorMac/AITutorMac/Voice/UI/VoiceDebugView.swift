@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 struct VoiceDebugView: View {
   let voiceController: VoiceController
+  let speechInputController: SpeechInputController
 
 #if DEBUG
   @State private var debugText = "它现在正在给这个项目安装运行所需要的软件。"
@@ -91,6 +92,25 @@ struct VoiceDebugView: View {
           .font(.callout)
           .foregroundStyle(.secondary)
       }
+
+      Section("语音输入") {
+        Picker("识别语言", selection: inputLocaleSelection) {
+          Text("简体中文").tag("zh-CN")
+          Text("English (US)").tag("en-US")
+        }
+        Text("麦克风只会在你按住 Pet Bubble 中的“按住说话”时使用。")
+          .font(.callout)
+          .foregroundStyle(.secondary)
+
+#if DEBUG
+        Text("权限：麦克风 \(speechInputController.permissionStatus.microphone.rawValue) · 语音识别 \(speechInputController.permissionStatus.speechRecognition.rawValue)")
+          .font(.caption.monospaced())
+        Text("输入状态：\(speechInputController.state.rawValue)")
+          .font(.caption.monospaced())
+        Text("本机识别：\(onDeviceDebugText)")
+          .font(.caption.monospaced())
+#endif
+      }
     }
     .formStyle(.grouped)
     .padding(8)
@@ -136,6 +156,20 @@ struct VoiceDebugView: View {
     )
   }
 
+  private var inputLocaleSelection: Binding<String> {
+    Binding(
+      get: { speechInputController.selectedLocaleIdentifier },
+      set: { speechInputController.selectLocale(identifier: $0) }
+    )
+  }
+
+#if DEBUG
+  private var onDeviceDebugText: String {
+    speechInputController.onDeviceRecognitionSupported
+      .map { $0 ? "supported" : "unsupported" } ?? "unknown"
+  }
+#endif
+
   private func settingSlider(
     title: String,
     lowerLabel: String,
@@ -161,10 +195,15 @@ struct VoiceDebugView: View {
 @MainActor
 final class VoiceSettingsWindowController: NSObject, NSWindowDelegate {
   private let voiceController: VoiceController
+  private let speechInputController: SpeechInputController
   private var window: NSWindow?
 
-  init(voiceController: VoiceController) {
+  init(
+    voiceController: VoiceController,
+    speechInputController: SpeechInputController
+  ) {
     self.voiceController = voiceController
+    self.speechInputController = speechInputController
   }
 
   func show() {
@@ -196,7 +235,10 @@ final class VoiceSettingsWindowController: NSObject, NSWindowDelegate {
     window.contentMinSize = NSSize(width: 500, height: 500)
     window.delegate = self
     window.contentViewController = NSHostingController(
-      rootView: VoiceDebugView(voiceController: voiceController)
+      rootView: VoiceDebugView(
+        voiceController: voiceController,
+        speechInputController: speechInputController
+      )
     )
     window.center()
     self.window = window

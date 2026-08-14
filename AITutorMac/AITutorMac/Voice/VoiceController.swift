@@ -73,6 +73,8 @@ final class VoiceController {
   private var activeRequestID: UUID?
   @ObservationIgnored
   private var restorationState: PetState?
+  @ObservationIgnored
+  var onWillSpeak: (() -> Void)?
 
   init(
     petStateController: PetStateController,
@@ -100,6 +102,7 @@ final class VoiceController {
       return
     }
 
+    onWillSpeak?()
     userMessage = nil
     if restorationState == nil {
       restorationState = stableRestorationState(for: petStateController.currentState)

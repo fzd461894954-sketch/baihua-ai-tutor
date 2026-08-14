@@ -131,12 +131,19 @@ final class PetStateTests: XCTestCase {
     let appState = AppState()
     let stateController = PetStateController()
     let animationController = PetAnimationController(reduceMotionProvider: { false })
+    let voiceController = VoiceController(petStateController: stateController)
+    let speechInputController = SpeechInputController(
+      authorizationController: SpeechAuthorizationController(),
+      recognizerFactory: SystemSpeechRecognizerFactory(),
+      voiceOutputController: voiceController
+    )
     let windowController = PetWindowController(
       appState: appState,
       pet: .officialFlowerBunny,
       petImage: NSImage(named: "official_flower_bunny"),
       store: PetStore(defaults: defaults),
       stateController: stateController,
+      speechInputController: speechInputController,
       animationController: animationController,
       onOpenTutor: {}
     )

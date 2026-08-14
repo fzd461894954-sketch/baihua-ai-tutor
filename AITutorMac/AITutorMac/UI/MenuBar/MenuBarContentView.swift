@@ -11,6 +11,7 @@ struct MenuBarContentView: View {
   let showVoiceSettings: () -> Void
   let petStateController: PetStateController
   let voiceController: VoiceController
+  let speechInputController: SpeechInputController
   let transitionPetState: (PetState) -> Void
   let speak: (String) -> Void
   let stopSpeaking: () -> Void
@@ -37,6 +38,10 @@ struct MenuBarContentView: View {
 
     Button("我的桌面老师…", action: showPetLibrary)
     Button("语音设置…", action: showVoiceSettings)
+
+    if speechInputController.isMicrophoneActive {
+      Label("正在听…", systemImage: "mic.fill")
+    }
 
 #if DEBUG
     Divider()

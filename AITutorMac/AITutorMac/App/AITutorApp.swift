@@ -16,6 +16,7 @@ struct AITutorApp: App {
         showVoiceSettings: appDelegate.showVoiceSettings,
         petStateController: appDelegate.petStateController,
         voiceController: appDelegate.voiceController,
+        speechInputController: appDelegate.speechInputController,
         transitionPetState: appDelegate.transitionPetState,
         speak: appDelegate.speak,
         stopSpeaking: appDelegate.stopSpeaking,

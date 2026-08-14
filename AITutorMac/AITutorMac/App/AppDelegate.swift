@@ -16,6 +16,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     container.voiceController
   }
 
+  var speechInputController: SpeechInputController {
+    container.speechInputController
+  }
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApplication.shared.setActivationPolicy(.accessory)
     ProcessInfo.processInfo.disableAutomaticTermination(

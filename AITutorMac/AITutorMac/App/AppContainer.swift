@@ -8,6 +8,7 @@ final class AppContainer {
   let petLibrary: PetLibrary
   let petLibraryWindowController: PetLibraryWindowController
   let voiceController: VoiceController
+  let speechInputController: SpeechInputController
   let voiceSettingsWindowController: VoiceSettingsWindowController
 
   private let appState: AppState
@@ -32,12 +33,24 @@ final class AppContainer {
 
     let voiceController = VoiceController(petStateController: petStateController)
     self.voiceController = voiceController
+    let speechInputController = SpeechInputController(
+      authorizationController: SpeechAuthorizationController(),
+      recognizerFactory: SystemSpeechRecognizerFactory(),
+      voiceOutputController: voiceController
+    )
+    self.speechInputController = speechInputController
+    voiceController.onWillSpeak = { [weak speechInputController] in
+      if speechInputController?.isInteractionActive == true {
+        speechInputController?.cancel()
+      }
+    }
 
     let petWindowController = PetWindowController(
       appState: appState,
       pet: petLibrary.currentPet,
       petImage: petLibrary.image(for: petLibrary.currentPet),
       stateController: petStateController,
+      speechInputController: speechInputController,
       onScaleChange: { [weak petLibrary] id, scale in
         petLibrary?.updateScale(for: id, scale: scale)
       }
@@ -50,7 +63,8 @@ final class AppContainer {
       importer: petImporter
     )
     voiceSettingsWindowController = VoiceSettingsWindowController(
-      voiceController: voiceController
+      voiceController: voiceController,
+      speechInputController: speechInputController
     )
     petLibrary.onCurrentPetChange = { [weak petWindowController] pet, image in
       petWindowController?.reloadPet(pet, image: image)
@@ -89,6 +103,7 @@ final class AppContainer {
     debugAutoExitTask?.cancel()
     debugAutoExitTask = nil
 #endif
+    speechInputController.cancel()
     voiceController.stop()
     hotKeyManager.unregister()
     voiceSettingsWindowController.stop()
