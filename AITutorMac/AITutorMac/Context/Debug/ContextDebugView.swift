@@ -4,6 +4,7 @@ import SwiftUI
 struct ContextDebugView: View {
   let contextState: ContextState
   let classifier: TargetApplicationClassifier
+  let accessibilitySnapshotController: AccessibilitySnapshotController
 
   var body: some View {
     let raw = contextState.rawFrontmostApplication
@@ -18,6 +19,10 @@ struct ContextDebugView: View {
       Text("PID: \(classifiedApplication.map { String($0.processIdentifier) } ?? "无")")
       Text("Observed Time: \(observedTime(classifiedApplication))")
       Text("Classification: \(classifier.classify(classifiedApplication).rawValue)")
+      Text(
+        "Accessibility: "
+          + accessibilitySnapshotController.authorizationController.permissionState.displayName
+      )
     }
   }
 

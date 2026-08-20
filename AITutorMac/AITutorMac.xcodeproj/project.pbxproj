@@ -54,6 +54,15 @@
 		01000000000000000000002D /* ActiveApplicationMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000030 /* ActiveApplicationMonitor.swift */; };
 		01000000000000000000002E /* ContextDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000031 /* ContextDebugView.swift */; };
 		01000000000000000000002F /* ContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000032 /* ContextTests.swift */; };
+		010000000000000000000030 /* AccessibilityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000033 /* AccessibilityModels.swift */; };
+		010000000000000000000031 /* AccessibilityAuthorizationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000034 /* AccessibilityAuthorizationController.swift */; };
+		010000000000000000000032 /* AXApplicationReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000035 /* AXApplicationReader.swift */; };
+		010000000000000000000033 /* AXWindowReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000036 /* AXWindowReader.swift */; };
+		010000000000000000000034 /* AXTextExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000037 /* AXTextExtractor.swift */; };
+		010000000000000000000035 /* AccessibilitySnapshotController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000038 /* AccessibilitySnapshotController.swift */; };
+		010000000000000000000036 /* AccessibilityDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000039 /* AccessibilityDebugView.swift */; };
+		010000000000000000000037 /* AccessibilityDebugWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000003A /* AccessibilityDebugWindowController.swift */; };
+		010000000000000000000038 /* AccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000003B /* AccessibilityTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -117,6 +126,15 @@
 		020000000000000000000030 /* ActiveApplicationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveApplicationMonitor.swift; sourceTree = "<group>"; };
 		020000000000000000000031 /* ContextDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextDebugView.swift; sourceTree = "<group>"; };
 		020000000000000000000032 /* ContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextTests.swift; sourceTree = "<group>"; };
+		020000000000000000000033 /* AccessibilityModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityModels.swift; sourceTree = "<group>"; };
+		020000000000000000000034 /* AccessibilityAuthorizationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityAuthorizationController.swift; sourceTree = "<group>"; };
+		020000000000000000000035 /* AXApplicationReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXApplicationReader.swift; sourceTree = "<group>"; };
+		020000000000000000000036 /* AXWindowReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXWindowReader.swift; sourceTree = "<group>"; };
+		020000000000000000000037 /* AXTextExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXTextExtractor.swift; sourceTree = "<group>"; };
+		020000000000000000000038 /* AccessibilitySnapshotController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilitySnapshotController.swift; sourceTree = "<group>"; };
+		020000000000000000000039 /* AccessibilityDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityDebugView.swift; sourceTree = "<group>"; };
+		02000000000000000000003A /* AccessibilityDebugWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityDebugWindowController.swift; sourceTree = "<group>"; };
+		02000000000000000000003B /* AccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -226,6 +244,7 @@
 				020000000000000000000026 /* VoiceTests.swift */,
 				02000000000000000000002C /* SpeechInputTests.swift */,
 				020000000000000000000032 /* ContextTests.swift */,
+				02000000000000000000003B /* AccessibilityTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -379,6 +398,7 @@
 			children = (
 				07000000000000000000001A /* Core */,
 				07000000000000000000001B /* AppAwareness */,
+				07000000000000000000001D /* Accessibility */,
 				07000000000000000000001C /* Debug */,
 			);
 			path = Context;
@@ -406,8 +426,31 @@
 			isa = PBXGroup;
 			children = (
 				020000000000000000000031 /* ContextDebugView.swift */,
+				020000000000000000000039 /* AccessibilityDebugView.swift */,
+				02000000000000000000003A /* AccessibilityDebugWindowController.swift */,
 			);
 			path = Debug;
+			sourceTree = "<group>";
+		};
+		07000000000000000000001D /* Accessibility */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000034 /* AccessibilityAuthorizationController.swift */,
+				020000000000000000000035 /* AXApplicationReader.swift */,
+				020000000000000000000036 /* AXWindowReader.swift */,
+				020000000000000000000037 /* AXTextExtractor.swift */,
+				020000000000000000000038 /* AccessibilitySnapshotController.swift */,
+				07000000000000000000001E /* Models */,
+			);
+			path = Accessibility;
+			sourceTree = "<group>";
+		};
+		07000000000000000000001E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000033 /* AccessibilityModels.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -547,6 +590,14 @@
 				01000000000000000000002C /* TargetApplicationClassifier.swift in Sources */,
 				01000000000000000000002D /* ActiveApplicationMonitor.swift in Sources */,
 				01000000000000000000002E /* ContextDebugView.swift in Sources */,
+				010000000000000000000030 /* AccessibilityModels.swift in Sources */,
+				010000000000000000000031 /* AccessibilityAuthorizationController.swift in Sources */,
+				010000000000000000000032 /* AXApplicationReader.swift in Sources */,
+				010000000000000000000033 /* AXWindowReader.swift in Sources */,
+				010000000000000000000034 /* AXTextExtractor.swift in Sources */,
+				010000000000000000000035 /* AccessibilitySnapshotController.swift in Sources */,
+				010000000000000000000036 /* AccessibilityDebugView.swift in Sources */,
+				010000000000000000000037 /* AccessibilityDebugWindowController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -561,6 +612,7 @@
 				010000000000000000000023 /* VoiceTests.swift in Sources */,
 				010000000000000000000029 /* SpeechInputTests.swift in Sources */,
 				01000000000000000000002F /* ContextTests.swift in Sources */,
+				010000000000000000000038 /* AccessibilityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

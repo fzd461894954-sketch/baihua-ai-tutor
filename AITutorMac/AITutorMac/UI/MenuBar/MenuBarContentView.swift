@@ -4,12 +4,14 @@ import SwiftUI
 struct MenuBarContentView: View {
   let appState: AppState
   let contextState: ContextState
+  let accessibilitySnapshotController: AccessibilitySnapshotController
   let showPanel: () -> Void
   let hidePanel: () -> Void
   let showPet: () -> Void
   let hidePet: () -> Void
   let showPetLibrary: () -> Void
   let showVoiceSettings: () -> Void
+  let showAccessibilityDebug: () -> Void
   let petStateController: PetStateController
   let voiceController: VoiceController
   let speechInputController: SpeechInputController
@@ -52,8 +54,11 @@ struct MenuBarContentView: View {
 
     ContextDebugView(
       contextState: contextState,
-      classifier: TargetApplicationClassifier()
+      classifier: TargetApplicationClassifier(),
+      accessibilitySnapshotController: accessibilitySnapshotController
     )
+
+    Button("Accessibility Snapshot…", action: showAccessibilityDebug)
 
     Menu("开发测试") {
       Menu("Pet 状态") {

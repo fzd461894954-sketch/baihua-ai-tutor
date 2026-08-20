@@ -12,6 +12,8 @@ final class AppContainer {
   let voiceSettingsWindowController: VoiceSettingsWindowController
   let contextState: ContextState
   let activeApplicationMonitor: ActiveApplicationMonitor
+  let accessibilitySnapshotController: AccessibilitySnapshotController
+  let accessibilityDebugWindowController: AccessibilityDebugWindowController
 
   private let appState: AppState
   private let hotKeyManager: HotKeyManager
@@ -24,8 +26,26 @@ final class AppContainer {
   init(appState: AppState, contextState: ContextState) {
     self.appState = appState
     self.contextState = contextState
-    activeApplicationMonitor = ActiveApplicationMonitor(contextState: contextState)
-    let panelController = FloatingPanelController(appState: appState)
+    let activeApplicationMonitor = ActiveApplicationMonitor(contextState: contextState)
+    self.activeApplicationMonitor = activeApplicationMonitor
+    let accessibilitySnapshotController = AccessibilitySnapshotController(
+      contextState: contextState
+    )
+    self.accessibilitySnapshotController = accessibilitySnapshotController
+    let accessibilityDebugWindowController = AccessibilityDebugWindowController(
+      snapshotController: accessibilitySnapshotController
+    )
+    self.accessibilityDebugWindowController = accessibilityDebugWindowController
+    activeApplicationMonitor.onLastExternalApplicationChange = {
+      [weak accessibilitySnapshotController] _ in
+      accessibilitySnapshotController?.targetApplicationDidChange()
+    }
+    let panelController = FloatingPanelController(
+      appState: appState,
+      showAccessibilityDebug: { [weak accessibilityDebugWindowController] in
+        accessibilityDebugWindowController?.show()
+      }
+    )
     let petStateController = PetStateController()
     let libraryStore = PetLibraryStore()
     let imageValidator = PetImageValidator()
@@ -77,6 +97,7 @@ final class AppContainer {
   }
 
   func start() {
+    accessibilitySnapshotController.refreshPermissionState()
     activeApplicationMonitor.start()
     panelController.create()
     petWindowController.start()
@@ -100,6 +121,8 @@ final class AppContainer {
   }
 
   func stop() {
+    accessibilityDebugWindowController.stop()
+    accessibilitySnapshotController.cancelCurrentRead(clearSnapshot: true)
     activeApplicationMonitor.stop()
 #if DEBUG
     petStateStressTask?.cancel()
@@ -116,6 +139,10 @@ final class AppContainer {
     petLibraryWindowController.stop()
     petWindowController.stop()
     panelController.stop()
+  }
+
+  func refreshAccessibilityPermission() {
+    accessibilitySnapshotController.refreshPermissionState()
   }
 
 #if DEBUG

@@ -12,4 +12,5 @@ enum AppLogger {
   static let voiceInput = Logger(subsystem: subsystem, category: "voice-input")
   static let hotKey = Logger(subsystem: subsystem, category: "hotkey")
   static let context = Logger(subsystem: subsystem, category: "context")
+  static let accessibility = Logger(subsystem: subsystem, category: "accessibility")
 }

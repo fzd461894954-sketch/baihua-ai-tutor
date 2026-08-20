@@ -24,6 +24,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     container.speechInputController
   }
 
+  var accessibilitySnapshotController: AccessibilitySnapshotController {
+    container.accessibilitySnapshotController
+  }
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApplication.shared.setActivationPolicy(.accessory)
     ProcessInfo.processInfo.disableAutomaticTermination(
@@ -39,6 +43,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ProcessInfo.processInfo.enableAutomaticTermination(
       automaticTerminationReason
     )
+  }
+
+  func applicationDidBecomeActive(_ notification: Notification) {
+    container.refreshAccessibilityPermission()
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -67,6 +75,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc func showVoiceSettings() {
     container.voiceSettingsWindowController.show()
+  }
+
+  @objc func showAccessibilityDebug() {
+    container.accessibilityDebugWindowController.show()
   }
 
   func speak(_ text: String) {

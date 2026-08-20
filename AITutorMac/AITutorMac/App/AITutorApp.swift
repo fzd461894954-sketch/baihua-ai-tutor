@@ -9,12 +9,14 @@ struct AITutorApp: App {
       MenuBarContentView(
         appState: appDelegate.appState,
         contextState: appDelegate.contextState,
+        accessibilitySnapshotController: appDelegate.accessibilitySnapshotController,
         showPanel: appDelegate.showPanel,
         hidePanel: appDelegate.hidePanel,
         showPet: appDelegate.showPet,
         hidePet: appDelegate.hidePet,
         showPetLibrary: appDelegate.showPetLibrary,
         showVoiceSettings: appDelegate.showVoiceSettings,
+        showAccessibilityDebug: appDelegate.showAccessibilityDebug,
         petStateController: appDelegate.petStateController,
         voiceController: appDelegate.voiceController,
         speechInputController: appDelegate.speechInputController,
@@ -25,5 +27,14 @@ struct AITutorApp: App {
       )
     }
     .menuBarExtraStyle(.menu)
+#if DEBUG
+    .commands {
+      CommandMenu("Context Debug") {
+        Button("Accessibility Snapshot…") {
+          appDelegate.showAccessibilityDebug()
+        }
+      }
+    }
+#endif
   }
 }

@@ -106,6 +106,7 @@ final class ActiveApplicationMonitor {
   private var observations: [ApplicationWorkspaceObservation] = []
 
   private(set) var isMonitoring = false
+  var onLastExternalApplicationChange: ((ActiveApplicationSnapshot?) -> Void)?
 
   var currentApplication: ActiveApplicationSnapshot? {
     contextState.rawFrontmostApplication
@@ -159,13 +160,22 @@ final class ActiveApplicationMonitor {
     let isSelfApplication = application.bundleIdentifier == selfBundleIdentifier()
     contextState.recordActivation(application, isSelfApplication: isSelfApplication)
 
+    if !isSelfApplication {
+      onLastExternalApplicationChange?(application)
+    }
+
     let bundleIdentifier = application.bundleIdentifier ?? "<unknown>"
     AppLogger.context.info("Active app changed: \(bundleIdentifier, privacy: .public)")
   }
 
   private func recordTermination(_ application: ActiveApplicationSnapshot) {
+    let terminatedLastExternal = contextState.lastExternalApplication?.processIdentifier
+      == application.processIdentifier
     contextState.removeTerminatedApplication(
       processIdentifier: application.processIdentifier
     )
+    if terminatedLastExternal {
+      onLastExternalApplicationChange?(nil)
+    }
   }
 }

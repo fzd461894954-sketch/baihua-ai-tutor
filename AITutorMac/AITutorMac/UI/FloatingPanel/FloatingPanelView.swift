@@ -1,6 +1,12 @@
 import SwiftUI
 
 struct FloatingPanelView: View {
+  let showAccessibilityDebug: () -> Void
+
+  init(showAccessibilityDebug: @escaping () -> Void = {}) {
+    self.showAccessibilityDebug = showAccessibilityDebug
+  }
+
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
       header
@@ -28,6 +34,9 @@ struct FloatingPanelView: View {
       )
 
       Spacer(minLength: 0)
+#if DEBUG
+      Button("Context Debug · Accessibility…", action: showAccessibilityDebug)
+#endif
       disabledTeachingActions
     }
     .padding(24)
