@@ -76,6 +76,9 @@ enum TutorPanelState: Equatable, Sendable {
 final class TutorPanelContentStore {
   private(set) var state: TutorPanelState
 
+  @ObservationIgnored
+  var onPresentationIDChange: (@MainActor (UUID?) -> Void)?
+
   private var emptyAvailability: TutorPanelActionAvailability
 
   init(
@@ -88,27 +91,36 @@ final class TutorPanelContentStore {
   }
 
   func setLoading() {
-    state = .loading
+    updateState(.loading)
   }
 
   func setAvailability(_ availability: TutorPanelActionAvailability) {
     emptyAvailability = availability
     if case .empty = state {
-      state = .empty(availability: availability)
+      updateState(.empty(availability: availability))
     }
   }
 
   func present(_ presentation: TutorPresentationModel) {
-    state = .presentation(presentation)
+    updateState(.presentation(presentation))
   }
 
   func presentError(
     _ error: TutorPanelErrorPresentation = .requestFailed
   ) {
-    state = .error(error)
+    updateState(.error(error))
   }
 
   func clear() {
-    state = .empty(availability: emptyAvailability)
+    updateState(.empty(availability: emptyAvailability))
+  }
+
+  private func updateState(_ newState: TutorPanelState) {
+    state = newState
+    if case let .presentation(presentation) = newState {
+      onPresentationIDChange?(presentation.responseMetadata.responseID)
+    } else {
+      onPresentationIDChange?(nil)
+    }
   }
 }

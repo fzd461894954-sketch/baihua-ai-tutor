@@ -74,11 +74,15 @@ final class TutorPanelTests: XCTestCase {
     handler.handle(.explainCurrentContent)
     handler.handle(.retryCurrentContent)
     handler.handle(.dismissCurrentPresentation)
+    handler.handle(.playTutorVoice(TutorPanelPresentationFixtures.apiLesson))
+    handler.handle(.stopTutorVoice)
 
     XCTAssertEqual(received, [
       .explainCurrentContent,
       .retryCurrentContent,
       .dismissCurrentPresentation,
+      .playTutorVoice(TutorPanelPresentationFixtures.apiLesson),
+      .stopTutorVoice,
     ])
   }
 

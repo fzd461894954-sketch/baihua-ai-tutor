@@ -109,6 +109,8 @@ final class TutorManualRuntimeController {
       state = .idle
     case .openModelSettings:
       break
+    case .playTutorVoice, .stopTutorVoice:
+      break
 #if DEBUG
     case .showDebugFixture:
       break

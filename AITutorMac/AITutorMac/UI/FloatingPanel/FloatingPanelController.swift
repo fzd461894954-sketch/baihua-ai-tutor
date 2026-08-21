@@ -13,6 +13,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
   private let appState: AppState
   private let contentStore: TutorPanelContentStore
   private let actionHandler: TutorPanelActionHandler
+  private let tutorVoiceCoordinator: TutorVoiceCoordinator
   private let onVisibilityChange: @MainActor (Bool) -> Void
   private var panel: NSPanel?
   private var escapeKeyMonitor: Any?
@@ -21,11 +22,13 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     appState: AppState,
     contentStore: TutorPanelContentStore,
     actionHandler: TutorPanelActionHandler,
+    tutorVoiceCoordinator: TutorVoiceCoordinator,
     onVisibilityChange: @escaping @MainActor (Bool) -> Void = { _ in }
   ) {
     self.appState = appState
     self.contentStore = contentStore
     self.actionHandler = actionHandler
+    self.tutorVoiceCoordinator = tutorVoiceCoordinator
     self.onVisibilityChange = onVisibilityChange
     super.init()
   }
@@ -63,7 +66,8 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     panel.contentViewController = NSHostingController(
       rootView: FloatingPanelView(
         contentStore: contentStore,
-        actionHandler: actionHandler
+        actionHandler: actionHandler,
+        tutorVoiceCoordinator: tutorVoiceCoordinator
       )
     )
     panel.delegate = self

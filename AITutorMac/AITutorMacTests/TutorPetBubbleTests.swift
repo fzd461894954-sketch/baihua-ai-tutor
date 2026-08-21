@@ -108,10 +108,13 @@ final class TutorPetBubbleTests: XCTestCase {
     let appState = AppState()
     let store = TutorPanelContentStore(availability: .available)
     let center = TutorPetNotificationCenter(autoDismissDuration: 5)
+    let voiceController = VoiceController(petStateController: PetStateController())
+    let tutorVoiceCoordinator = TutorVoiceCoordinator(voiceController: voiceController)
     let panel = FloatingPanelController(
       appState: appState,
       contentStore: store,
       actionHandler: TutorPanelActionHandler { _ in },
+      tutorVoiceCoordinator: tutorVoiceCoordinator,
       onVisibilityChange: { isVisible in
         if isVisible {
           center.panelDidBecomeVisible()

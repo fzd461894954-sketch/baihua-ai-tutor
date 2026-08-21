@@ -74,6 +74,8 @@ final class VoiceController {
   @ObservationIgnored
   private var restorationState: PetState?
   @ObservationIgnored
+  private var statusObservers: [UUID: @MainActor (VoicePlaybackStatus) -> Void] = [:]
+  @ObservationIgnored
   var onWillSpeak: (() -> Void)?
 
   init(
@@ -94,6 +96,19 @@ final class VoiceController {
 
   var isActive: Bool {
     status == .speaking || status == .paused
+  }
+
+  @discardableResult
+  func addStatusObserver(
+    _ observer: @escaping @MainActor (VoicePlaybackStatus) -> Void
+  ) -> UUID {
+    let observerID = UUID()
+    statusObservers[observerID] = observer
+    return observerID
+  }
+
+  func removeStatusObserver(_ observerID: UUID) {
+    statusObservers[observerID] = nil
   }
 
   func speak(text: String) {
@@ -128,7 +143,7 @@ final class VoiceController {
     )
 
     activeRequestID = requestID
-    status = .speaking
+    setStatus(.speaking)
     petStateController.transition(to: .speaking)
 
     do {
@@ -137,7 +152,7 @@ final class VoiceController {
     } catch {
       AppLogger.voice.error("System speech request could not start")
       activeRequestID = nil
-      status = .unavailable
+      setStatus(.unavailable)
       userMessage = Self.unavailableMessage
       restorePetState()
     }
@@ -150,7 +165,7 @@ final class VoiceController {
 
     activeRequestID = nil
     synthesizer.stop()
-    status = .idle
+    setStatus(.idle)
     userMessage = nil
     restorePetState()
     AppLogger.voice.info("System speech stopped by user")
@@ -160,7 +175,7 @@ final class VoiceController {
     guard status == .speaking, synthesizer.pause() else {
       return
     }
-    status = .paused
+    setStatus(.paused)
     AppLogger.voice.info("System speech paused")
   }
 
@@ -168,7 +183,7 @@ final class VoiceController {
     guard status == .paused, synthesizer.continue() else {
       return
     }
-    status = .speaking
+    setStatus(.speaking)
     AppLogger.voice.info("System speech continued")
   }
 
@@ -216,12 +231,22 @@ final class VoiceController {
 
     switch event {
     case .didStart:
-      status = .speaking
+      setStatus(.speaking)
     case .didFinish, .didCancel:
       activeRequestID = nil
-      status = .idle
+      setStatus(.idle)
       restorePetState()
       AppLogger.voice.info("System speech request ended")
+    }
+  }
+
+  private func setStatus(_ newStatus: VoicePlaybackStatus) {
+    guard newStatus != status else {
+      return
+    }
+    status = newStatus
+    for observer in statusObservers.values {
+      observer(newStatus)
     }
   }
 

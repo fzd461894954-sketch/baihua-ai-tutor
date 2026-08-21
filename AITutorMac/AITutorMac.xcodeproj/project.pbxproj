@@ -142,6 +142,9 @@
 		010000000000000000000088 /* ProviderSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000088 /* ProviderSettingsTests.swift */; };
 		010000000000000000000089 /* TutorPetBubbleAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000089 /* TutorPetBubbleAdapter.swift */; };
 		01000000000000000000008A /* TutorPetBubbleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008A /* TutorPetBubbleTests.swift */; };
+		01000000000000000000008B /* TutorVoicePresentationAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008B /* TutorVoicePresentationAdapter.swift */; };
+		01000000000000000000008C /* TutorVoiceCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008C /* TutorVoiceCoordinator.swift */; };
+		01000000000000000000008D /* TutorVoiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008D /* TutorVoiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -293,6 +296,9 @@
 		020000000000000000000088 /* ProviderSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSettingsTests.swift; sourceTree = "<group>"; };
 		020000000000000000000089 /* TutorPetBubbleAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPetBubbleAdapter.swift; sourceTree = "<group>"; };
 		02000000000000000000008A /* TutorPetBubbleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPetBubbleTests.swift; sourceTree = "<group>"; };
+		02000000000000000000008B /* TutorVoicePresentationAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoicePresentationAdapter.swift; sourceTree = "<group>"; };
+		02000000000000000000008C /* TutorVoiceCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoiceCoordinator.swift; sourceTree = "<group>"; };
+		02000000000000000000008D /* TutorVoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -427,6 +433,7 @@
 				020000000000000000000083 /* TutorRuntimeIntegrationTests.swift */,
 				020000000000000000000088 /* ProviderSettingsTests.swift */,
 				02000000000000000000008A /* TutorPetBubbleTests.swift */,
+				02000000000000000000008D /* TutorVoiceTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -722,6 +729,8 @@
 				020000000000000000000080 /* CurrentExplainableContentProvider.swift */,
 				020000000000000000000081 /* TutorManualRuntimeController.swift */,
 				020000000000000000000089 /* TutorPetBubbleAdapter.swift */,
+				02000000000000000000008B /* TutorVoicePresentationAdapter.swift */,
+				02000000000000000000008C /* TutorVoiceCoordinator.swift */,
 				020000000000000000000057 /* TutorPresentationModel.swift */,
 				020000000000000000000059 /* TutorInteractionPolicy.swift */,
 				02000000000000000000005A /* TutorDisplayQueue.swift */,
@@ -948,6 +957,8 @@
 				010000000000000000000080 /* CurrentExplainableContentProvider.swift in Sources */,
 				010000000000000000000081 /* TutorManualRuntimeController.swift in Sources */,
 				010000000000000000000089 /* TutorPetBubbleAdapter.swift in Sources */,
+				01000000000000000000008B /* TutorVoicePresentationAdapter.swift in Sources */,
+				01000000000000000000008C /* TutorVoiceCoordinator.swift in Sources */,
 				010000000000000000000054 /* TutorPresentationModel.swift in Sources */,
 				010000000000000000000056 /* TutorInteractionPolicy.swift in Sources */,
 				010000000000000000000057 /* TutorDisplayQueue.swift in Sources */,
@@ -1017,6 +1028,7 @@
 				010000000000000000000083 /* TutorRuntimeIntegrationTests.swift in Sources */,
 				010000000000000000000088 /* ProviderSettingsTests.swift in Sources */,
 				01000000000000000000008A /* TutorPetBubbleTests.swift in Sources */,
+				01000000000000000000008D /* TutorVoiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

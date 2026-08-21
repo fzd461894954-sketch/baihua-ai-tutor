@@ -7,6 +7,7 @@ enum TutorPanelLayoutPolicy {
 struct FloatingPanelView: View {
   let contentStore: TutorPanelContentStore
   let actionHandler: TutorPanelActionHandler
+  let tutorVoiceCoordinator: TutorVoiceCoordinator
 
   var body: some View {
     VStack(spacing: 0) {
@@ -71,7 +72,11 @@ struct FloatingPanelView: View {
   @ViewBuilder private func presentationContent(_ value: TutorPresentationModel) -> some View {
     switch value.outcome {
     case .lesson:
-      TutorLessonView(presentation: value, actionHandler: actionHandler)
+      TutorLessonView(
+        presentation: value,
+        actionHandler: actionHandler,
+        tutorVoiceCoordinator: tutorVoiceCoordinator
+      )
         .id(value.responseMetadata.responseID)
     case .needsMoreContext:
       statusContent(value, icon: "text.badge.plus", tint: .blue,
@@ -153,6 +158,7 @@ struct FloatingPanelView: View {
 private struct TutorLessonView: View {
   let presentation: TutorPresentationModel
   let actionHandler: TutorPanelActionHandler
+  let tutorVoiceCoordinator: TutorVoiceCoordinator
   @State private var isGlossaryExpanded = TutorPanelLayoutPolicy.glossaryStartsExpanded
 
   var body: some View {
@@ -162,6 +168,7 @@ private struct TutorLessonView: View {
         Text(presentation.title).font(.title2.bold()).textSelection(.enabled)
       }
       Text(presentation.plainExplanation).lineSpacing(5).textSelection(.enabled)
+      voiceButton
 
       if !presentation.keyPoints.isEmpty {
         section("记住这几点") {
@@ -223,6 +230,26 @@ private struct TutorLessonView: View {
     }
   }
 
+  @ViewBuilder
+  private var voiceButton: some View {
+    if tutorVoiceCoordinator.isPlaying(presentation) {
+      Button {
+        actionHandler.handle(.stopTutorVoice)
+      } label: {
+        Label("停止朗读", systemImage: "stop.fill")
+      }
+      .buttonStyle(.borderedProminent)
+    } else {
+      Button {
+        actionHandler.handle(.playTutorVoice(presentation))
+      } label: {
+        Label("讲给我听", systemImage: "speaker.wave.2.fill")
+      }
+      .buttonStyle(.borderedProminent)
+      .disabled(!tutorVoiceCoordinator.isAvailable(for: presentation))
+    }
+  }
+
   private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(title).font(.headline)
@@ -255,8 +282,15 @@ private struct TutorPanelCard<Content: View>: View {
 #if DEBUG
 #Preview("Lesson") {
   let store = TutorPanelContentStore(availability: .available)
+  let petStateController = PetStateController()
+  let voiceController = VoiceController(petStateController: petStateController)
+  let tutorVoiceCoordinator = TutorVoiceCoordinator(voiceController: voiceController)
   store.present(TutorPanelPresentationFixtures.apiLesson)
-  return FloatingPanelView(contentStore: store, actionHandler: .unavailable)
+  return FloatingPanelView(
+    contentStore: store,
+    actionHandler: .unavailable,
+    tutorVoiceCoordinator: tutorVoiceCoordinator
+  )
     .frame(width: 400, height: 600)
 }
 #endif

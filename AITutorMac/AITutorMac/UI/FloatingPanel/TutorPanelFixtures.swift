@@ -203,6 +203,8 @@ final class TutorPanelDebugFixtureController {
       contentStore.clear()
     case .openModelSettings:
       break
+    case .playTutorVoice, .stopTutorVoice:
+      break
     case let .showDebugFixture(fixture):
       presentationTask?.cancel()
       presentationTask = nil

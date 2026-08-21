@@ -11,6 +11,7 @@ final class AppContainer {
   let petLibrary: PetLibrary
   let petLibraryWindowController: PetLibraryWindowController
   let voiceController: VoiceController
+  let tutorVoiceCoordinator: TutorVoiceCoordinator
   let speechInputController: SpeechInputController
   let voiceSettingsWindowController: VoiceSettingsWindowController
   let contextState: ContextState
@@ -164,29 +165,62 @@ final class AppContainer {
     )
     self.tutorManualRuntimeController = tutorManualRuntimeController
 
+    let petStateController = PetStateController()
+    self.petStateController = petStateController
+    let voiceController = VoiceController(petStateController: petStateController)
+    self.voiceController = voiceController
+    let speechInputController = SpeechInputController(
+      authorizationController: SpeechAuthorizationController(),
+      recognizerFactory: SystemSpeechRecognizerFactory(),
+      voiceOutputController: voiceController
+    )
+    self.speechInputController = speechInputController
+    voiceController.onWillSpeak = { [weak speechInputController] in
+      if speechInputController?.isInteractionActive == true {
+        speechInputController?.cancel()
+      }
+    }
+    let tutorVoiceCoordinator = TutorVoiceCoordinator(voiceController: voiceController)
+    self.tutorVoiceCoordinator = tutorVoiceCoordinator
+    tutorPanelContentStore.onPresentationIDChange = { [weak tutorVoiceCoordinator] responseID in
+      tutorVoiceCoordinator?.presentationDidChange(to: responseID)
+    }
+
     let tutorPanelActionHandler: TutorPanelActionHandler
 #if DEBUG
     let fixtureController = TutorPanelDebugFixtureController(
       contentStore: tutorPanelContentStore
     )
     tutorPanelActionHandler = TutorPanelActionHandler {
-      [fixtureController, weak tutorManualRuntimeController, weak aiModelSettingsWindowController]
+      [fixtureController, weak tutorManualRuntimeController, weak aiModelSettingsWindowController,
+       weak tutorVoiceCoordinator]
       intent in
-      if case .showDebugFixture = intent {
+      switch intent {
+      case .showDebugFixture:
         fixtureController.handle(intent)
-      } else if case .openModelSettings = intent {
+      case .openModelSettings:
         aiModelSettingsWindowController?.show()
-      } else {
+      case let .playTutorVoice(presentation):
+        tutorVoiceCoordinator?.play(presentation)
+      case .stopTutorVoice:
+        tutorVoiceCoordinator?.stop()
+      default:
         tutorManualRuntimeController?.handle(intent)
       }
     }
 #else
     tutorPanelActionHandler = TutorPanelActionHandler {
-      [weak tutorManualRuntimeController, weak aiModelSettingsWindowController]
+      [weak tutorManualRuntimeController, weak aiModelSettingsWindowController,
+       weak tutorVoiceCoordinator]
       intent in
-      if case .openModelSettings = intent {
+      switch intent {
+      case .openModelSettings:
         aiModelSettingsWindowController?.show()
-      } else {
+      case let .playTutorVoice(presentation):
+        tutorVoiceCoordinator?.play(presentation)
+      case .stopTutorVoice:
+        tutorVoiceCoordinator?.stop()
+      default:
         tutorManualRuntimeController?.handle(intent)
       }
     }
@@ -219,34 +253,19 @@ final class AppContainer {
       appState: appState,
       contentStore: tutorPanelContentStore,
       actionHandler: tutorPanelActionHandler,
+      tutorVoiceCoordinator: tutorVoiceCoordinator,
       onVisibilityChange: { [weak tutorPetNotificationCenter] isVisible in
         if isVisible {
           tutorPetNotificationCenter?.panelDidBecomeVisible()
         }
       }
     )
-    let petStateController = PetStateController()
     let libraryStore = PetLibraryStore()
     let imageValidator = PetImageValidator()
     let petLibrary = PetLibrary(store: libraryStore, validator: imageValidator)
     let petImporter = PetImporter(validator: imageValidator, store: libraryStore)
     self.panelController = panelController
-    self.petStateController = petStateController
     self.petLibrary = petLibrary
-
-    let voiceController = VoiceController(petStateController: petStateController)
-    self.voiceController = voiceController
-    let speechInputController = SpeechInputController(
-      authorizationController: SpeechAuthorizationController(),
-      recognizerFactory: SystemSpeechRecognizerFactory(),
-      voiceOutputController: voiceController
-    )
-    self.speechInputController = speechInputController
-    voiceController.onWillSpeak = { [weak speechInputController] in
-      if speechInputController?.isInteractionActive == true {
-        speechInputController?.cancel()
-      }
-    }
 
     let petWindowController = PetWindowController(
       appState: appState,
@@ -329,6 +348,7 @@ final class AppContainer {
     debugAutoExitTask = nil
 #endif
     speechInputController.cancel()
+    tutorVoiceCoordinator.shutdown()
     voiceController.stop()
     hotKeyManager.unregister()
     aiModelSettingsWindowController.stop()
