@@ -3,6 +3,8 @@ import AppKit
 @MainActor
 final class AppContainer {
   let panelController: FloatingPanelController
+  let tutorPanelContentStore: TutorPanelContentStore
+  let tutorPresentationRouter: TutorPresentationRouter
   let petStateController: PetStateController
   let petWindowController: PetWindowController
   let petLibrary: PetLibrary
@@ -13,7 +15,21 @@ final class AppContainer {
   let contextState: ContextState
   let activeApplicationMonitor: ActiveApplicationMonitor
   let accessibilitySnapshotController: AccessibilitySnapshotController
+  let contextRevisionPipeline: ContextRevisionPipeline
+  let semanticBuffer: SemanticBuffer
+  let accessibilityLiveMonitor: AccessibilityLiveMonitor
   let accessibilityDebugWindowController: AccessibilityDebugWindowController
+#if DEBUG
+  let tutorCoordinator: TutorCoordinator
+  let tutorDebugWindowController: TutorDebugWindowController
+  let tutorPanelCoordinator: TutorCoordinator
+  let tutorManualRuntimeController: TutorManualRuntimeController
+  let debugLLMConfigurationStore: DebugLLMConfigurationStore
+  private let debugConfiguredTutorEngine: DebugConfiguredTutorEngine
+  let realtimeVoiceCoordinator: DoubaoRealtimeVoiceCoordinator
+  let realtimeVoiceSpikeWindowController: RealtimeVoiceSpikeWindowController
+  private let realtimeVoiceLifecycleMonitor: RealtimeVoiceLifecycleMonitor
+#endif
 
   private let appState: AppState
   private let hotKeyManager: HotKeyManager
@@ -32,19 +48,127 @@ final class AppContainer {
       contextState: contextState
     )
     self.accessibilitySnapshotController = accessibilitySnapshotController
+    let contextRevisionPipeline = ContextRevisionPipeline()
+    self.contextRevisionPipeline = contextRevisionPipeline
+    let semanticBuffer = SemanticBuffer()
+    self.semanticBuffer = semanticBuffer
+    let accessibilityLiveMonitor = AccessibilityLiveMonitor(
+      contextState: contextState,
+      authorizationController: accessibilitySnapshotController.authorizationController,
+      snapshotRequester: accessibilitySnapshotController,
+      revisionPipeline: contextRevisionPipeline,
+      semanticBuffer: semanticBuffer
+    )
+    self.accessibilityLiveMonitor = accessibilityLiveMonitor
     let accessibilityDebugWindowController = AccessibilityDebugWindowController(
-      snapshotController: accessibilitySnapshotController
+      snapshotController: accessibilitySnapshotController,
+      liveMonitor: accessibilityLiveMonitor
     )
     self.accessibilityDebugWindowController = accessibilityDebugWindowController
+#if DEBUG
+    let tutorCoordinator = TutorCoordinator(
+      engine: LLMTutorEngine(provider: FakeLLMProvider())
+    )
+    self.tutorCoordinator = tutorCoordinator
+    let debugLLMConfigurationStore = DebugLLMConfigurationStore()
+    self.debugLLMConfigurationStore = debugLLMConfigurationStore
+    let realDemoController = TutorRealDemoController(
+      configurationStore: debugLLMConfigurationStore
+    )
+    let tutorDebugWindowController = TutorDebugWindowController(
+      coordinator: tutorCoordinator,
+      realDemoController: realDemoController
+    )
+    self.tutorDebugWindowController = tutorDebugWindowController
+
+    let realtimeBootstrapProvider = MockRealtimeVoiceBootstrapProvider()
+    let realtimeRTCClient = MockVolcRTCClientAdapter()
+    let realtimeSession = DoubaoRTCSession(
+      bootstrapProvider: realtimeBootstrapProvider,
+      commandProvider: realtimeBootstrapProvider,
+      rtcClient: realtimeRTCClient,
+      maximumSessionDuration: 3 * 60
+    )
+    let realtimeVoiceCoordinator = DoubaoRealtimeVoiceCoordinator(session: realtimeSession)
+    self.realtimeVoiceCoordinator = realtimeVoiceCoordinator
+    realtimeVoiceSpikeWindowController = RealtimeVoiceSpikeWindowController(
+      coordinator: realtimeVoiceCoordinator
+    )
+    realtimeVoiceLifecycleMonitor = RealtimeVoiceLifecycleMonitor(
+      coordinator: realtimeVoiceCoordinator
+    )
+#endif
     activeApplicationMonitor.onLastExternalApplicationChange = {
-      [weak accessibilitySnapshotController] _ in
+      [weak accessibilitySnapshotController, weak accessibilityLiveMonitor] application in
       accessibilitySnapshotController?.targetApplicationDidChange()
+      accessibilityLiveMonitor?.lastExternalApplicationDidChange(application)
     }
+    activeApplicationMonitor.onApplicationTermination = { [weak accessibilityLiveMonitor] application in
+      accessibilityLiveMonitor?.targetApplicationDidTerminate(application)
+    }
+    let tutorPanelContentStore: TutorPanelContentStore
+    let tutorPanelActionHandler: TutorPanelActionHandler
+    let tutorPresentationRouter: TutorPresentationRouter
+#if DEBUG
+    tutorPanelContentStore = TutorPanelContentStore(availability: .available)
+    tutorPresentationRouter = TutorPresentationRouter(contentStore: tutorPanelContentStore)
+    let fixtureController = TutorPanelDebugFixtureController(
+      contentStore: tutorPanelContentStore
+    )
+    let currentContentProvider = CurrentExplainableContentProvider()
+    let debugConfiguredTutorEngine = DebugConfiguredTutorEngine()
+    self.debugConfiguredTutorEngine = debugConfiguredTutorEngine
+    let tutorPanelCoordinator = TutorCoordinator(engine: debugConfiguredTutorEngine)
+    self.tutorPanelCoordinator = tutorPanelCoordinator
+    let tutorManualRuntimeController = TutorManualRuntimeController(
+      contentProvider: currentContentProvider,
+      coordinator: tutorPanelCoordinator,
+      router: tutorPresentationRouter,
+      contentStore: tutorPanelContentStore,
+      prepareEngine: { [weak debugLLMConfigurationStore] in
+        guard let configuration = debugLLMConfigurationStore?.validatedConfiguration() else {
+          return false
+        }
+        await debugConfiguredTutorEngine.configure(configuration)
+        return true
+      }
+    )
+    self.tutorManualRuntimeController = tutorManualRuntimeController
+    tutorPanelActionHandler = TutorPanelActionHandler { [fixtureController, weak tutorManualRuntimeController] intent in
+      if case .showDebugFixture = intent {
+        fixtureController.handle(intent)
+      } else {
+        tutorManualRuntimeController?.handle(intent)
+      }
+    }
+    accessibilityLiveMonitor.onLiveSessionChange = { [weak tutorManualRuntimeController] sessionID in
+      if let sessionID {
+        tutorManualRuntimeController?.liveSessionDidStart(sessionID)
+      } else {
+        tutorManualRuntimeController?.liveSessionDidEnd()
+      }
+    }
+    semanticBuffer.onChunk = { [weak tutorManualRuntimeController] chunk in
+      guard let sessionID = tutorManualRuntimeController?.activeSessionID else {
+        return
+      }
+      tutorManualRuntimeController?.receive(chunk, sessionID: sessionID)
+    }
+#else
+    tutorPanelContentStore = TutorPanelContentStore()
+    tutorPresentationRouter = TutorPresentationRouter(contentStore: tutorPanelContentStore)
+    tutorPanelActionHandler = TutorPanelActionHandler { [tutorPanelContentStore] intent in
+      if case .dismissCurrentPresentation = intent {
+        tutorPanelContentStore.clear()
+      }
+    }
+#endif
+    self.tutorPanelContentStore = tutorPanelContentStore
+    self.tutorPresentationRouter = tutorPresentationRouter
     let panelController = FloatingPanelController(
       appState: appState,
-      showAccessibilityDebug: { [weak accessibilityDebugWindowController] in
-        accessibilityDebugWindowController?.show()
-      }
+      contentStore: tutorPanelContentStore,
+      actionHandler: tutorPanelActionHandler
     )
     let petStateController = PetStateController()
     let libraryStore = PetLibraryStore()
@@ -112,6 +236,8 @@ final class AppContainer {
     }
 
 #if DEBUG
+    tutorCoordinator.start()
+    realtimeVoiceLifecycleMonitor.start()
     applyPetStateDebugArgumentIfRequested()
     startPetStateStressTestIfRequested()
     applyVoiceDebugArgumentIfRequested()
@@ -121,7 +247,16 @@ final class AppContainer {
   }
 
   func stop() {
+#if DEBUG
+    semanticBuffer.onChunk = nil
+    accessibilityLiveMonitor.onLiveSessionChange = nil
+    tutorManualRuntimeController.stop()
+    tutorCoordinator.stop()
+    tutorDebugWindowController.stop()
+    realtimeVoiceLifecycleMonitor.stop()
+#endif
     accessibilityDebugWindowController.stop()
+    accessibilityLiveMonitor.stop()
     accessibilitySnapshotController.cancelCurrentRead(clearSnapshot: true)
     activeApplicationMonitor.stop()
 #if DEBUG
@@ -144,6 +279,16 @@ final class AppContainer {
   func refreshAccessibilityPermission() {
     accessibilitySnapshotController.refreshPermissionState()
   }
+
+#if DEBUG
+  var hasActiveRealtimeVoiceSession: Bool {
+    realtimeVoiceCoordinator.isActive
+  }
+
+  func stopRealtimeVoiceForTermination() async {
+    await realtimeVoiceSpikeWindowController.stop()
+  }
+#endif
 
 #if DEBUG
   private func applyPetStateDebugArgumentIfRequested() {

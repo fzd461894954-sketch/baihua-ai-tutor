@@ -83,8 +83,20 @@ struct SystemRunningApplicationResolver: RunningApplicationResolving {
 }
 
 @MainActor
+protocol LiveSnapshotRequesting: AnyObject {
+  var isReading: Bool { get }
+
+  @discardableResult
+  func requestLiveRead(
+    target: ActiveApplicationSnapshot,
+    completion: @escaping (Result<AccessibleTextSnapshot, AccessibilityReaderError>) -> Void
+  ) -> Bool
+  func cancelLiveRead()
+}
+
+@MainActor
 @Observable
-final class AccessibilitySnapshotController {
+final class AccessibilitySnapshotController: LiveSnapshotRequesting {
   let authorizationController: AccessibilityAuthorizationController
 
   private(set) var snapshot: AccessibleTextSnapshot?
@@ -108,6 +120,7 @@ final class AccessibilitySnapshotController {
   @ObservationIgnored private var readTask: Task<Void, Never>?
   @ObservationIgnored private var cancellationToken: AccessibilityReadCancellationToken?
   @ObservationIgnored private var activeRequestID: UUID?
+  @ObservationIgnored private var activeRequestKind: ReadRequestKind?
 
   init(
     contextState: ContextState,
@@ -162,38 +175,50 @@ final class AccessibilitySnapshotController {
       return
     }
 
-    let requestID = UUID()
-    let token = AccessibilityReadCancellationToken()
-    activeRequestID = requestID
-    cancellationToken = token
-    isReading = true
+    beginRead(target: target, kind: .manual)
+  }
 
-    readTask = Task { [weak self, reader, timeoutNanoseconds] in
-      do {
-        let result = try await Self.performRead(
-          reader: reader,
-          target: target,
-          token: token,
-          timeoutNanoseconds: timeoutNanoseconds
-        )
-        self?.complete(result, requestID: requestID)
-      } catch let error as AccessibilityReaderError {
-        self?.complete(error, requestID: requestID)
-      } catch is CancellationError {
-        self?.complete(.cancelled, requestID: requestID)
-      } catch {
-        self?.complete(.readFailed, requestID: requestID)
-      }
+  @discardableResult
+  func requestLiveRead(
+    target: ActiveApplicationSnapshot,
+    completion: @escaping (Result<AccessibleTextSnapshot, AccessibilityReaderError>) -> Void
+  ) -> Bool {
+    guard !isReading else {
+      return false
     }
+
+    authorizationController.refreshState()
+    guard authorizationController.permissionState == .granted else {
+      return false
+    }
+    guard !isSelfTarget(target), applicationResolver.isAvailable(target) else {
+      return false
+    }
+
+    beginRead(target: target, kind: .live(completion))
+    return true
+  }
+
+  func cancelLiveRead() {
+    guard case .live = activeRequestKind else {
+      return
+    }
+    cancelCurrentRead()
   }
 
   func cancelCurrentRead(clearSnapshot: Bool = false) {
+    let cancelledRequestKind = activeRequestKind
     cancellationToken?.cancel()
     readTask?.cancel()
     cancellationToken = nil
     readTask = nil
     activeRequestID = nil
+    activeRequestKind = nil
     isReading = false
+
+    if case let .live(completion) = cancelledRequestKind {
+      completion(.failure(.cancelled))
+    }
 
     if clearSnapshot {
       snapshot = nil
@@ -228,6 +253,38 @@ final class AccessibilitySnapshotController {
     NSPasteboard.general.setString(text, forType: .string)
   }
 
+  private func beginRead(target: ActiveApplicationSnapshot, kind: ReadRequestKind) {
+    let requestID = UUID()
+    let token = AccessibilityReadCancellationToken()
+    activeRequestID = requestID
+    activeRequestKind = kind
+    cancellationToken = token
+    isReading = true
+
+    readTask = Task { [weak self, reader, timeoutNanoseconds] in
+      do {
+        let result = try await Self.performRead(
+          reader: reader,
+          target: target,
+          token: token,
+          timeoutNanoseconds: timeoutNanoseconds
+        )
+        self?.complete(result, requestID: requestID)
+      } catch let error as AccessibilityReaderError {
+        self?.complete(error, requestID: requestID)
+      } catch is CancellationError {
+        self?.complete(.cancelled, requestID: requestID)
+      } catch {
+        self?.complete(.readFailed, requestID: requestID)
+      }
+    }
+  }
+
+  private func isSelfTarget(_ target: ActiveApplicationSnapshot) -> Bool {
+    target.bundleIdentifier == selfBundleIdentifier()
+      || target.processIdentifier == selfProcessIdentifier()
+  }
+
   private func complete(
     _ result: AccessibleTextSnapshot,
     requestID: UUID
@@ -235,13 +292,21 @@ final class AccessibilitySnapshotController {
     guard activeRequestID == requestID else {
       return
     }
-
-    snapshot = result
-    lastError = nil
+    let requestKind = activeRequestKind
     finish(requestID: requestID)
-    AppLogger.accessibility.info(
-      "AX snapshot completed nodes=\(result.nodeCount, privacy: .public) characters=\(result.characterCount, privacy: .public) truncated=\(result.truncated, privacy: .public) duration=\(result.duration, privacy: .public)"
-    )
+
+    switch requestKind {
+    case .manual:
+      snapshot = result
+      lastError = nil
+      AppLogger.accessibility.info(
+        "AX snapshot completed nodes=\(result.nodeCount, privacy: .public) characters=\(result.characterCount, privacy: .public) truncated=\(result.truncated, privacy: .public) duration=\(result.duration, privacy: .public)"
+      )
+    case let .live(completion):
+      completion(.success(result))
+    case nil:
+      return
+    }
   }
 
   private func complete(
@@ -252,12 +317,21 @@ final class AccessibilitySnapshotController {
       return
     }
 
-    snapshot = nil
-    lastError = error
+    let requestKind = activeRequestKind
     finish(requestID: requestID)
-    AppLogger.accessibility.error(
-      "AX snapshot failed: \(error.rawValue, privacy: .public)"
-    )
+
+    switch requestKind {
+    case .manual:
+      snapshot = nil
+      lastError = error
+      AppLogger.accessibility.error(
+        "AX snapshot failed: \(error.rawValue, privacy: .public)"
+      )
+    case let .live(completion):
+      completion(.failure(error))
+    case nil:
+      return
+    }
   }
 
   private func finish(requestID: UUID) {
@@ -267,6 +341,7 @@ final class AccessibilitySnapshotController {
     cancellationToken = nil
     readTask = nil
     activeRequestID = nil
+    activeRequestKind = nil
     isReading = false
   }
 
@@ -296,5 +371,10 @@ final class AccessibilitySnapshotController {
     } onCancel: {
       token.cancel()
     }
+  }
+
+  private enum ReadRequestKind {
+    case manual
+    case live((Result<AccessibleTextSnapshot, AccessibilityReaderError>) -> Void)
   }
 }

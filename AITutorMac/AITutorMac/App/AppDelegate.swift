@@ -3,6 +3,9 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
   private let automaticTerminationReason = "白话 AI 菜单栏伴侣需要持续响应快捷键"
+#if DEBUG
+  private var isCompletingRealtimeVoiceTermination = false
+#endif
 
   let appState = AppState()
   let contextState = ContextState()
@@ -53,6 +56,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     false
   }
 
+  func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+#if DEBUG
+    guard container.hasActiveRealtimeVoiceSession else {
+      return .terminateNow
+    }
+    guard !isCompletingRealtimeVoiceTermination else {
+      return .terminateLater
+    }
+
+    isCompletingRealtimeVoiceTermination = true
+    Task {
+      await container.stopRealtimeVoiceForTermination()
+      sender.reply(toApplicationShouldTerminate: true)
+    }
+    return .terminateLater
+#else
+    return .terminateNow
+#endif
+  }
+
   @objc func showPanel() {
     container.panelController.show()
   }
@@ -79,6 +102,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc func showAccessibilityDebug() {
     container.accessibilityDebugWindowController.show()
+  }
+
+  @objc func showTutorDebug() {
+#if DEBUG
+    container.tutorDebugWindowController.show()
+#endif
+  }
+
+  @objc func showRealtimeVoiceSpike() {
+#if DEBUG
+    container.realtimeVoiceSpikeWindowController.show()
+#endif
   }
 
   func speak(_ text: String) {

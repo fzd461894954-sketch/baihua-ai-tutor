@@ -12,6 +12,7 @@ struct MenuBarContentView: View {
   let showPetLibrary: () -> Void
   let showVoiceSettings: () -> Void
   let showAccessibilityDebug: () -> Void
+  let showTutorDebug: () -> Void
   let petStateController: PetStateController
   let voiceController: VoiceController
   let speechInputController: SpeechInputController
@@ -59,6 +60,7 @@ struct MenuBarContentView: View {
     )
 
     Button("Accessibility Snapshot…", action: showAccessibilityDebug)
+    Button("Tutor Debug…", action: showTutorDebug)
 
     Menu("开发测试") {
       Menu("Pet 状态") {

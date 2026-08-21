@@ -8,6 +8,8 @@ build/
 Build/
 .build/
 *.xcarchive
+*.profraw
+*.profdata
 
 # Local configuration, credentials, and signing material
 .env

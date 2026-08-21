@@ -11,16 +11,19 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
   }
 
   private let appState: AppState
-  private let showAccessibilityDebug: () -> Void
+  private let contentStore: TutorPanelContentStore
+  private let actionHandler: TutorPanelActionHandler
   private var panel: NSPanel?
   private var escapeKeyMonitor: Any?
 
   init(
     appState: AppState,
-    showAccessibilityDebug: @escaping () -> Void = {}
+    contentStore: TutorPanelContentStore,
+    actionHandler: TutorPanelActionHandler
   ) {
     self.appState = appState
-    self.showAccessibilityDebug = showAccessibilityDebug
+    self.contentStore = contentStore
+    self.actionHandler = actionHandler
     super.init()
   }
 
@@ -56,7 +59,8 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     panel.backgroundColor = .clear
     panel.contentViewController = NSHostingController(
       rootView: FloatingPanelView(
-        showAccessibilityDebug: showAccessibilityDebug
+        contentStore: contentStore,
+        actionHandler: actionHandler
       )
     )
     panel.delegate = self

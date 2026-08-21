@@ -63,6 +63,78 @@
 		010000000000000000000036 /* AccessibilityDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000039 /* AccessibilityDebugView.swift */; };
 		010000000000000000000037 /* AccessibilityDebugWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000003A /* AccessibilityDebugWindowController.swift */; };
 		010000000000000000000038 /* AccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000003B /* AccessibilityTests.swift */; };
+		010000000000000000000039 /* AccessibilityLiveTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000003C /* AccessibilityLiveTypes.swift */; };
+		01000000000000000000003A /* AXEventCoalescer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000003D /* AXEventCoalescer.swift */; };
+		01000000000000000000003B /* AXObserverAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000003E /* AXObserverAdapter.swift */; };
+		01000000000000000000003C /* AXLiveMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000003F /* AXLiveMonitor.swift */; };
+		01000000000000000000003D /* AccessibilityLiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000040 /* AccessibilityLiveTests.swift */; };
+		01000000000000000000003E /* TextNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000041 /* TextNormalizer.swift */; };
+		01000000000000000000003F /* ContextFingerprint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000042 /* ContextFingerprint.swift */; };
+		010000000000000000000040 /* ContextDiffEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000043 /* ContextDiffEngine.swift */; };
+		010000000000000000000041 /* TextNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000044 /* TextNormalizerTests.swift */; };
+		010000000000000000000042 /* ContextDiffEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000045 /* ContextDiffEngineTests.swift */; };
+		010000000000000000000043 /* ContextIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000046 /* ContextIdentity.swift */; };
+		010000000000000000000044 /* ContextRevisionPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000047 /* ContextRevisionPipeline.swift */; };
+		010000000000000000000045 /* ContextRevisionPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000048 /* ContextRevisionPipelineTests.swift */; };
+		010000000000000000000046 /* SemanticChunk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000049 /* SemanticChunk.swift */; };
+		010000000000000000000047 /* SemanticBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000004A /* SemanticBuffer.swift */; };
+		010000000000000000000048 /* SemanticBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000004B /* SemanticBufferTests.swift */; };
+		010000000000000000000049 /* TutorRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000004C /* TutorRequest.swift */; };
+		01000000000000000000004A /* TutorResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000004D /* TutorResponse.swift */; };
+		01000000000000000000004B /* TutorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000004E /* TutorEngine.swift */; };
+		01000000000000000000004C /* TutorResponseValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000004F /* TutorResponseValidator.swift */; };
+		01000000000000000000004D /* FakeLLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000050 /* FakeLLMProvider.swift */; };
+		01000000000000000000004E /* TutorRequestFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000051 /* TutorRequestFactory.swift */; };
+		01000000000000000000004F /* TutorContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000052 /* TutorContractTests.swift */; };
+		010000000000000000000050 /* TutorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000053 /* TutorCoordinator.swift */; };
+		010000000000000000000051 /* TutorDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000054 /* TutorDebugView.swift */; };
+		010000000000000000000052 /* TutorDebugWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000055 /* TutorDebugWindowController.swift */; };
+		010000000000000000000053 /* TutorCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000056 /* TutorCoordinatorTests.swift */; };
+		010000000000000000000054 /* TutorPresentationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000057 /* TutorPresentationModel.swift */; };
+		010000000000000000000055 /* TutorPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000058 /* TutorPresentationTests.swift */; };
+		010000000000000000000056 /* TutorInteractionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000059 /* TutorInteractionPolicy.swift */; };
+		010000000000000000000057 /* TutorDisplayQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000005A /* TutorDisplayQueue.swift */; };
+		010000000000000000000058 /* TutorInteractionPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000005B /* TutorInteractionPolicyTests.swift */; };
+		010000000000000000000059 /* PromptPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000005C /* PromptPackage.swift */; };
+		01000000000000000000005A /* PromptRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000005D /* PromptRules.swift */; };
+		01000000000000000000005B /* TutorPromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000005E /* TutorPromptBuilder.swift */; };
+		01000000000000000000005C /* PromptContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000005F /* PromptContractTests.swift */; };
+		01000000000000000000005D /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000060 /* LLMProvider.swift */; };
+		01000000000000000000005E /* RawLLMResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000061 /* RawLLMResponse.swift */; };
+		01000000000000000000005F /* TutorResponseDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000062 /* TutorResponseDecoder.swift */; };
+		010000000000000000000060 /* LLMTutorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000063 /* LLMTutorEngine.swift */; };
+		010000000000000000000061 /* LLMProviderContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000064 /* LLMProviderContractTests.swift */; };
+		010000000000000000000062 /* OpenAICompatibleProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000065 /* OpenAICompatibleProvider.swift */; };
+		010000000000000000000063 /* OpenAICompatibleProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000066 /* OpenAICompatibleProviderTests.swift */; };
+		010000000000000000000064 /* TutorRealDemoController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000067 /* TutorRealDemoController.swift */; };
+		010000000000000000000065 /* TutorRealDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000068 /* TutorRealDemoView.swift */; };
+		010000000000000000000066 /* TutorRealDemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000069 /* TutorRealDemoTests.swift */; };
+		010000000000000000000067 /* TutorQualityEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000006A /* TutorQualityEvaluator.swift */; };
+		010000000000000000000068 /* TutorEvaluationDataset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000006B /* TutorEvaluationDataset.swift */; };
+		010000000000000000000069 /* TutorQualityEvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000006C /* TutorQualityEvaluatorTests.swift */; };
+		01000000000000000000006A /* TutorPanelContentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000006D /* TutorPanelContentStore.swift */; };
+		01000000000000000000006B /* TutorPanelActionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000006E /* TutorPanelActionHandler.swift */; };
+		01000000000000000000006C /* TutorPresentationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000006F /* TutorPresentationRouter.swift */; };
+		01000000000000000000006D /* TutorPanelFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000070 /* TutorPanelFixtures.swift */; };
+		01000000000000000000006E /* TutorPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000071 /* TutorPanelTests.swift */; };
+		01000000000000000000006F /* RealtimeVoiceSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000072 /* RealtimeVoiceSessionState.swift */; };
+		010000000000000000000070 /* RealtimeVoiceFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000073 /* RealtimeVoiceFailure.swift */; };
+		010000000000000000000071 /* RealtimeVoiceEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000074 /* RealtimeVoiceEvent.swift */; };
+		010000000000000000000072 /* RealtimeVoiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000075 /* RealtimeVoiceSession.swift */; };
+		010000000000000000000073 /* RealtimeVoiceBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000076 /* RealtimeVoiceBootstrap.swift */; };
+		010000000000000000000074 /* RealtimeVoiceBootstrapProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000077 /* RealtimeVoiceBootstrapProvider.swift */; };
+		010000000000000000000075 /* DoubaoS2SConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000078 /* DoubaoS2SConfiguration.swift */; };
+		010000000000000000000076 /* VolcRTCClientAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000079 /* VolcRTCClientAdapter.swift */; };
+		010000000000000000000077 /* DoubaoRTCSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000007A /* DoubaoRTCSession.swift */; };
+		010000000000000000000078 /* DoubaoRealtimeVoiceCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000007B /* DoubaoRealtimeVoiceCoordinator.swift */; };
+		010000000000000000000079 /* RealtimeVoiceSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000007C /* RealtimeVoiceSpikeView.swift */; };
+		01000000000000000000007A /* RealtimeVoiceSpikeWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000007D /* RealtimeVoiceSpikeWindowController.swift */; };
+		01000000000000000000007B /* RealtimeVoiceLifecycleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000007E /* RealtimeVoiceLifecycleMonitor.swift */; };
+		01000000000000000000007C /* RealtimeVoiceSpikeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000007F /* RealtimeVoiceSpikeTests.swift */; };
+		010000000000000000000080 /* CurrentExplainableContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000080 /* CurrentExplainableContentProvider.swift */; };
+		010000000000000000000081 /* TutorManualRuntimeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000081 /* TutorManualRuntimeController.swift */; };
+		010000000000000000000082 /* DebugLLMConfigurationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000082 /* DebugLLMConfigurationStore.swift */; };
+		010000000000000000000083 /* TutorRuntimeIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000083 /* TutorRuntimeIntegrationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -135,6 +207,78 @@
 		020000000000000000000039 /* AccessibilityDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityDebugView.swift; sourceTree = "<group>"; };
 		02000000000000000000003A /* AccessibilityDebugWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityDebugWindowController.swift; sourceTree = "<group>"; };
 		02000000000000000000003B /* AccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityTests.swift; sourceTree = "<group>"; };
+		02000000000000000000003C /* AccessibilityLiveTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityLiveTypes.swift; sourceTree = "<group>"; };
+		02000000000000000000003D /* AXEventCoalescer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXEventCoalescer.swift; sourceTree = "<group>"; };
+		02000000000000000000003E /* AXObserverAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXObserverAdapter.swift; sourceTree = "<group>"; };
+		02000000000000000000003F /* AXLiveMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXLiveMonitor.swift; sourceTree = "<group>"; };
+		020000000000000000000040 /* AccessibilityLiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityLiveTests.swift; sourceTree = "<group>"; };
+		020000000000000000000041 /* TextNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextNormalizer.swift; sourceTree = "<group>"; };
+		020000000000000000000042 /* ContextFingerprint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextFingerprint.swift; sourceTree = "<group>"; };
+		020000000000000000000043 /* ContextDiffEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextDiffEngine.swift; sourceTree = "<group>"; };
+		020000000000000000000044 /* TextNormalizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextNormalizerTests.swift; sourceTree = "<group>"; };
+		020000000000000000000045 /* ContextDiffEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextDiffEngineTests.swift; sourceTree = "<group>"; };
+		020000000000000000000046 /* ContextIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextIdentity.swift; sourceTree = "<group>"; };
+		020000000000000000000047 /* ContextRevisionPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextRevisionPipeline.swift; sourceTree = "<group>"; };
+		020000000000000000000048 /* ContextRevisionPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextRevisionPipelineTests.swift; sourceTree = "<group>"; };
+		020000000000000000000049 /* SemanticChunk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticChunk.swift; sourceTree = "<group>"; };
+		02000000000000000000004A /* SemanticBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticBuffer.swift; sourceTree = "<group>"; };
+		02000000000000000000004B /* SemanticBufferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticBufferTests.swift; sourceTree = "<group>"; };
+		02000000000000000000004C /* TutorRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorRequest.swift; sourceTree = "<group>"; };
+		02000000000000000000004D /* TutorResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorResponse.swift; sourceTree = "<group>"; };
+		02000000000000000000004E /* TutorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorEngine.swift; sourceTree = "<group>"; };
+		02000000000000000000004F /* TutorResponseValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorResponseValidator.swift; sourceTree = "<group>"; };
+		020000000000000000000050 /* FakeLLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeLLMProvider.swift; sourceTree = "<group>"; };
+		020000000000000000000051 /* TutorRequestFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorRequestFactory.swift; sourceTree = "<group>"; };
+		020000000000000000000052 /* TutorContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorContractTests.swift; sourceTree = "<group>"; };
+		020000000000000000000053 /* TutorCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorCoordinator.swift; sourceTree = "<group>"; };
+		020000000000000000000054 /* TutorDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorDebugView.swift; sourceTree = "<group>"; };
+		020000000000000000000055 /* TutorDebugWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorDebugWindowController.swift; sourceTree = "<group>"; };
+		020000000000000000000056 /* TutorCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorCoordinatorTests.swift; sourceTree = "<group>"; };
+		020000000000000000000057 /* TutorPresentationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPresentationModel.swift; sourceTree = "<group>"; };
+		020000000000000000000058 /* TutorPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPresentationTests.swift; sourceTree = "<group>"; };
+		020000000000000000000059 /* TutorInteractionPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorInteractionPolicy.swift; sourceTree = "<group>"; };
+		02000000000000000000005A /* TutorDisplayQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorDisplayQueue.swift; sourceTree = "<group>"; };
+		02000000000000000000005B /* TutorInteractionPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorInteractionPolicyTests.swift; sourceTree = "<group>"; };
+		02000000000000000000005C /* PromptPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptPackage.swift; sourceTree = "<group>"; };
+		02000000000000000000005D /* PromptRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptRules.swift; sourceTree = "<group>"; };
+		02000000000000000000005E /* TutorPromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPromptBuilder.swift; sourceTree = "<group>"; };
+		02000000000000000000005F /* PromptContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptContractTests.swift; sourceTree = "<group>"; };
+		020000000000000000000060 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
+		020000000000000000000061 /* RawLLMResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RawLLMResponse.swift; sourceTree = "<group>"; };
+		020000000000000000000062 /* TutorResponseDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorResponseDecoder.swift; sourceTree = "<group>"; };
+		020000000000000000000063 /* LLMTutorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMTutorEngine.swift; sourceTree = "<group>"; };
+		020000000000000000000064 /* LLMProviderContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProviderContractTests.swift; sourceTree = "<group>"; };
+		020000000000000000000065 /* OpenAICompatibleProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICompatibleProvider.swift; sourceTree = "<group>"; };
+		020000000000000000000066 /* OpenAICompatibleProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICompatibleProviderTests.swift; sourceTree = "<group>"; };
+		020000000000000000000067 /* TutorRealDemoController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorRealDemoController.swift; sourceTree = "<group>"; };
+		020000000000000000000068 /* TutorRealDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorRealDemoView.swift; sourceTree = "<group>"; };
+		020000000000000000000069 /* TutorRealDemoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorRealDemoTests.swift; sourceTree = "<group>"; };
+		02000000000000000000006A /* TutorQualityEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorQualityEvaluator.swift; sourceTree = "<group>"; };
+		02000000000000000000006B /* TutorEvaluationDataset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorEvaluationDataset.swift; sourceTree = "<group>"; };
+		02000000000000000000006C /* TutorQualityEvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorQualityEvaluatorTests.swift; sourceTree = "<group>"; };
+		02000000000000000000006D /* TutorPanelContentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPanelContentStore.swift; sourceTree = "<group>"; };
+		02000000000000000000006E /* TutorPanelActionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPanelActionHandler.swift; sourceTree = "<group>"; };
+		02000000000000000000006F /* TutorPresentationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPresentationRouter.swift; sourceTree = "<group>"; };
+		020000000000000000000070 /* TutorPanelFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPanelFixtures.swift; sourceTree = "<group>"; };
+		020000000000000000000071 /* TutorPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorPanelTests.swift; sourceTree = "<group>"; };
+		020000000000000000000072 /* RealtimeVoiceSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceSessionState.swift; sourceTree = "<group>"; };
+		020000000000000000000073 /* RealtimeVoiceFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceFailure.swift; sourceTree = "<group>"; };
+		020000000000000000000074 /* RealtimeVoiceEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceEvent.swift; sourceTree = "<group>"; };
+		020000000000000000000075 /* RealtimeVoiceSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceSession.swift; sourceTree = "<group>"; };
+		020000000000000000000076 /* RealtimeVoiceBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceBootstrap.swift; sourceTree = "<group>"; };
+		020000000000000000000077 /* RealtimeVoiceBootstrapProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceBootstrapProvider.swift; sourceTree = "<group>"; };
+		020000000000000000000078 /* DoubaoS2SConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoubaoS2SConfiguration.swift; sourceTree = "<group>"; };
+		020000000000000000000079 /* VolcRTCClientAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolcRTCClientAdapter.swift; sourceTree = "<group>"; };
+		02000000000000000000007A /* DoubaoRTCSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoubaoRTCSession.swift; sourceTree = "<group>"; };
+		02000000000000000000007B /* DoubaoRealtimeVoiceCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoubaoRealtimeVoiceCoordinator.swift; sourceTree = "<group>"; };
+		02000000000000000000007C /* RealtimeVoiceSpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceSpikeView.swift; sourceTree = "<group>"; };
+		02000000000000000000007D /* RealtimeVoiceSpikeWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceSpikeWindowController.swift; sourceTree = "<group>"; };
+		02000000000000000000007E /* RealtimeVoiceLifecycleMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceLifecycleMonitor.swift; sourceTree = "<group>"; };
+		02000000000000000000007F /* RealtimeVoiceSpikeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeVoiceSpikeTests.swift; sourceTree = "<group>"; };
+		020000000000000000000080 /* CurrentExplainableContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentExplainableContentProvider.swift; sourceTree = "<group>"; };
+		020000000000000000000081 /* TutorManualRuntimeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorManualRuntimeController.swift; sourceTree = "<group>"; };
+		020000000000000000000082 /* DebugLLMConfigurationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLLMConfigurationStore.swift; sourceTree = "<group>"; };
+		020000000000000000000083 /* TutorRuntimeIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorRuntimeIntegrationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -175,6 +319,7 @@
 				07000000000000000000000C /* Pet */,
 				070000000000000000000015 /* Voice */,
 				070000000000000000000019 /* Context */,
+				070000000000000000000022 /* Tutor */,
 				070000000000000000000008 /* Utilities */,
 				02000000000000000000000B /* Info.plist */,
 			);
@@ -214,6 +359,10 @@
 			children = (
 				020000000000000000000006 /* FloatingPanelController.swift */,
 				020000000000000000000007 /* FloatingPanelView.swift */,
+				02000000000000000000006D /* TutorPanelContentStore.swift */,
+				02000000000000000000006E /* TutorPanelActionHandler.swift */,
+				02000000000000000000006F /* TutorPresentationRouter.swift */,
+				020000000000000000000070 /* TutorPanelFixtures.swift */,
 			);
 			path = FloatingPanel;
 			sourceTree = "<group>";
@@ -245,6 +394,23 @@
 				02000000000000000000002C /* SpeechInputTests.swift */,
 				020000000000000000000032 /* ContextTests.swift */,
 				02000000000000000000003B /* AccessibilityTests.swift */,
+				020000000000000000000040 /* AccessibilityLiveTests.swift */,
+				020000000000000000000044 /* TextNormalizerTests.swift */,
+				020000000000000000000045 /* ContextDiffEngineTests.swift */,
+				020000000000000000000048 /* ContextRevisionPipelineTests.swift */,
+				02000000000000000000004B /* SemanticBufferTests.swift */,
+				020000000000000000000052 /* TutorContractTests.swift */,
+				020000000000000000000056 /* TutorCoordinatorTests.swift */,
+				020000000000000000000058 /* TutorPresentationTests.swift */,
+				02000000000000000000005B /* TutorInteractionPolicyTests.swift */,
+				02000000000000000000005F /* PromptContractTests.swift */,
+				020000000000000000000064 /* LLMProviderContractTests.swift */,
+				020000000000000000000066 /* OpenAICompatibleProviderTests.swift */,
+				020000000000000000000069 /* TutorRealDemoTests.swift */,
+				02000000000000000000006C /* TutorQualityEvaluatorTests.swift */,
+				020000000000000000000071 /* TutorPanelTests.swift */,
+				02000000000000000000007F /* RealtimeVoiceSpikeTests.swift */,
+				020000000000000000000083 /* TutorRuntimeIntegrationTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -360,6 +526,7 @@
 				020000000000000000000022 /* SpeechConfiguration.swift */,
 				020000000000000000000023 /* VoicePreferencesStore.swift */,
 				070000000000000000000017 /* Input */,
+				070000000000000000000026 /* Realtime */,
 				070000000000000000000016 /* UI */,
 			);
 			path = Voice;
@@ -393,12 +560,50 @@
 			path = UI;
 			sourceTree = "<group>";
 		};
+		070000000000000000000026 /* Realtime */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000072 /* RealtimeVoiceSessionState.swift */,
+				020000000000000000000073 /* RealtimeVoiceFailure.swift */,
+				020000000000000000000074 /* RealtimeVoiceEvent.swift */,
+				020000000000000000000075 /* RealtimeVoiceSession.swift */,
+				020000000000000000000076 /* RealtimeVoiceBootstrap.swift */,
+				020000000000000000000077 /* RealtimeVoiceBootstrapProvider.swift */,
+				070000000000000000000027 /* Doubao */,
+				070000000000000000000028 /* Debug */,
+			);
+			path = Realtime;
+			sourceTree = "<group>";
+		};
+		070000000000000000000027 /* Doubao */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000078 /* DoubaoS2SConfiguration.swift */,
+				020000000000000000000079 /* VolcRTCClientAdapter.swift */,
+				02000000000000000000007A /* DoubaoRTCSession.swift */,
+				02000000000000000000007B /* DoubaoRealtimeVoiceCoordinator.swift */,
+			);
+			path = Doubao;
+			sourceTree = "<group>";
+		};
+		070000000000000000000028 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000007C /* RealtimeVoiceSpikeView.swift */,
+				02000000000000000000007D /* RealtimeVoiceSpikeWindowController.swift */,
+				02000000000000000000007E /* RealtimeVoiceLifecycleMonitor.swift */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
 		070000000000000000000019 /* Context */ = {
 			isa = PBXGroup;
 			children = (
 				07000000000000000000001A /* Core */,
 				07000000000000000000001B /* AppAwareness */,
 				07000000000000000000001D /* Accessibility */,
+				070000000000000000000020 /* Diff */,
+				070000000000000000000021 /* Semantic */,
 				07000000000000000000001C /* Debug */,
 			);
 			path = Context;
@@ -409,6 +614,7 @@
 			children = (
 				02000000000000000000002D /* ActiveApplicationSnapshot.swift */,
 				02000000000000000000002E /* ContextState.swift */,
+				020000000000000000000047 /* ContextRevisionPipeline.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -440,6 +646,7 @@
 				020000000000000000000036 /* AXWindowReader.swift */,
 				020000000000000000000037 /* AXTextExtractor.swift */,
 				020000000000000000000038 /* AccessibilitySnapshotController.swift */,
+				07000000000000000000001F /* Live */,
 				07000000000000000000001E /* Models */,
 			);
 			path = Accessibility;
@@ -451,6 +658,95 @@
 				020000000000000000000033 /* AccessibilityModels.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		07000000000000000000001F /* Live */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000003C /* AccessibilityLiveTypes.swift */,
+				02000000000000000000003D /* AXEventCoalescer.swift */,
+				02000000000000000000003E /* AXObserverAdapter.swift */,
+				02000000000000000000003F /* AXLiveMonitor.swift */,
+			);
+			path = Live;
+			sourceTree = "<group>";
+		};
+		070000000000000000000020 /* Diff */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000041 /* TextNormalizer.swift */,
+				020000000000000000000042 /* ContextFingerprint.swift */,
+				020000000000000000000043 /* ContextDiffEngine.swift */,
+				020000000000000000000046 /* ContextIdentity.swift */,
+			);
+			path = Diff;
+			sourceTree = "<group>";
+		};
+		070000000000000000000021 /* Semantic */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000049 /* SemanticChunk.swift */,
+				02000000000000000000004A /* SemanticBuffer.swift */,
+			);
+			path = Semantic;
+			sourceTree = "<group>";
+		};
+		070000000000000000000022 /* Tutor */ = {
+			isa = PBXGroup;
+			children = (
+				070000000000000000000024 /* PromptBuilder */,
+				070000000000000000000025 /* LLM */,
+				02000000000000000000004C /* TutorRequest.swift */,
+				02000000000000000000004D /* TutorResponse.swift */,
+				02000000000000000000004E /* TutorEngine.swift */,
+				02000000000000000000004F /* TutorResponseValidator.swift */,
+				020000000000000000000051 /* TutorRequestFactory.swift */,
+				020000000000000000000053 /* TutorCoordinator.swift */,
+				020000000000000000000080 /* CurrentExplainableContentProvider.swift */,
+				020000000000000000000081 /* TutorManualRuntimeController.swift */,
+				020000000000000000000057 /* TutorPresentationModel.swift */,
+				020000000000000000000059 /* TutorInteractionPolicy.swift */,
+				02000000000000000000005A /* TutorDisplayQueue.swift */,
+				02000000000000000000006A /* TutorQualityEvaluator.swift */,
+				070000000000000000000023 /* Debug */,
+			);
+			path = Tutor;
+			sourceTree = "<group>";
+		};
+		070000000000000000000023 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000054 /* TutorDebugView.swift */,
+				020000000000000000000055 /* TutorDebugWindowController.swift */,
+				020000000000000000000067 /* TutorRealDemoController.swift */,
+				020000000000000000000068 /* TutorRealDemoView.swift */,
+				02000000000000000000006B /* TutorEvaluationDataset.swift */,
+				020000000000000000000082 /* DebugLLMConfigurationStore.swift */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
+		070000000000000000000024 /* PromptBuilder */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000005C /* PromptPackage.swift */,
+				02000000000000000000005D /* PromptRules.swift */,
+				02000000000000000000005E /* TutorPromptBuilder.swift */,
+			);
+			path = PromptBuilder;
+			sourceTree = "<group>";
+		};
+		070000000000000000000025 /* LLM */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000060 /* LLMProvider.swift */,
+				020000000000000000000061 /* RawLLMResponse.swift */,
+				020000000000000000000062 /* TutorResponseDecoder.swift */,
+				020000000000000000000063 /* LLMTutorEngine.swift */,
+				020000000000000000000065 /* OpenAICompatibleProvider.swift */,
+				020000000000000000000050 /* FakeLLMProvider.swift */,
+			);
+			path = LLM;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -559,6 +855,10 @@
 				010000000000000000000005 /* HotKeyManager.swift in Sources */,
 				010000000000000000000006 /* FloatingPanelController.swift in Sources */,
 				010000000000000000000007 /* FloatingPanelView.swift in Sources */,
+				01000000000000000000006A /* TutorPanelContentStore.swift in Sources */,
+				01000000000000000000006B /* TutorPanelActionHandler.swift in Sources */,
+				01000000000000000000006C /* TutorPresentationRouter.swift in Sources */,
+				01000000000000000000006D /* TutorPanelFixtures.swift in Sources */,
 				010000000000000000000008 /* MenuBarContentView.swift in Sources */,
 				010000000000000000000009 /* AppLogger.swift in Sources */,
 				01000000000000000000000C /* PetModel.swift in Sources */,
@@ -598,6 +898,57 @@
 				010000000000000000000035 /* AccessibilitySnapshotController.swift in Sources */,
 				010000000000000000000036 /* AccessibilityDebugView.swift in Sources */,
 				010000000000000000000037 /* AccessibilityDebugWindowController.swift in Sources */,
+				010000000000000000000039 /* AccessibilityLiveTypes.swift in Sources */,
+				01000000000000000000003A /* AXEventCoalescer.swift in Sources */,
+				01000000000000000000003B /* AXObserverAdapter.swift in Sources */,
+				01000000000000000000003C /* AXLiveMonitor.swift in Sources */,
+				01000000000000000000003E /* TextNormalizer.swift in Sources */,
+				01000000000000000000003F /* ContextFingerprint.swift in Sources */,
+				010000000000000000000040 /* ContextDiffEngine.swift in Sources */,
+				010000000000000000000043 /* ContextIdentity.swift in Sources */,
+				010000000000000000000044 /* ContextRevisionPipeline.swift in Sources */,
+				010000000000000000000046 /* SemanticChunk.swift in Sources */,
+				010000000000000000000047 /* SemanticBuffer.swift in Sources */,
+				010000000000000000000049 /* TutorRequest.swift in Sources */,
+				01000000000000000000004A /* TutorResponse.swift in Sources */,
+				01000000000000000000004B /* TutorEngine.swift in Sources */,
+				01000000000000000000004C /* TutorResponseValidator.swift in Sources */,
+				01000000000000000000004D /* FakeLLMProvider.swift in Sources */,
+				01000000000000000000004E /* TutorRequestFactory.swift in Sources */,
+				010000000000000000000050 /* TutorCoordinator.swift in Sources */,
+				010000000000000000000080 /* CurrentExplainableContentProvider.swift in Sources */,
+				010000000000000000000081 /* TutorManualRuntimeController.swift in Sources */,
+				010000000000000000000054 /* TutorPresentationModel.swift in Sources */,
+				010000000000000000000056 /* TutorInteractionPolicy.swift in Sources */,
+				010000000000000000000057 /* TutorDisplayQueue.swift in Sources */,
+				010000000000000000000059 /* PromptPackage.swift in Sources */,
+				01000000000000000000005A /* PromptRules.swift in Sources */,
+				01000000000000000000005B /* TutorPromptBuilder.swift in Sources */,
+				01000000000000000000005D /* LLMProvider.swift in Sources */,
+				01000000000000000000005E /* RawLLMResponse.swift in Sources */,
+				01000000000000000000005F /* TutorResponseDecoder.swift in Sources */,
+				010000000000000000000060 /* LLMTutorEngine.swift in Sources */,
+				010000000000000000000062 /* OpenAICompatibleProvider.swift in Sources */,
+				010000000000000000000067 /* TutorQualityEvaluator.swift in Sources */,
+				010000000000000000000051 /* TutorDebugView.swift in Sources */,
+				010000000000000000000052 /* TutorDebugWindowController.swift in Sources */,
+				010000000000000000000064 /* TutorRealDemoController.swift in Sources */,
+				010000000000000000000065 /* TutorRealDemoView.swift in Sources */,
+				010000000000000000000068 /* TutorEvaluationDataset.swift in Sources */,
+				010000000000000000000082 /* DebugLLMConfigurationStore.swift in Sources */,
+				01000000000000000000006F /* RealtimeVoiceSessionState.swift in Sources */,
+				010000000000000000000070 /* RealtimeVoiceFailure.swift in Sources */,
+				010000000000000000000071 /* RealtimeVoiceEvent.swift in Sources */,
+				010000000000000000000072 /* RealtimeVoiceSession.swift in Sources */,
+				010000000000000000000073 /* RealtimeVoiceBootstrap.swift in Sources */,
+				010000000000000000000074 /* RealtimeVoiceBootstrapProvider.swift in Sources */,
+				010000000000000000000075 /* DoubaoS2SConfiguration.swift in Sources */,
+				010000000000000000000076 /* VolcRTCClientAdapter.swift in Sources */,
+				010000000000000000000077 /* DoubaoRTCSession.swift in Sources */,
+				010000000000000000000078 /* DoubaoRealtimeVoiceCoordinator.swift in Sources */,
+				010000000000000000000079 /* RealtimeVoiceSpikeView.swift in Sources */,
+				01000000000000000000007A /* RealtimeVoiceSpikeWindowController.swift in Sources */,
+				01000000000000000000007B /* RealtimeVoiceLifecycleMonitor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -613,6 +964,23 @@
 				010000000000000000000029 /* SpeechInputTests.swift in Sources */,
 				01000000000000000000002F /* ContextTests.swift in Sources */,
 				010000000000000000000038 /* AccessibilityTests.swift in Sources */,
+				01000000000000000000003D /* AccessibilityLiveTests.swift in Sources */,
+				010000000000000000000041 /* TextNormalizerTests.swift in Sources */,
+				010000000000000000000042 /* ContextDiffEngineTests.swift in Sources */,
+				010000000000000000000045 /* ContextRevisionPipelineTests.swift in Sources */,
+				010000000000000000000048 /* SemanticBufferTests.swift in Sources */,
+				01000000000000000000004F /* TutorContractTests.swift in Sources */,
+				010000000000000000000053 /* TutorCoordinatorTests.swift in Sources */,
+				010000000000000000000055 /* TutorPresentationTests.swift in Sources */,
+				010000000000000000000058 /* TutorInteractionPolicyTests.swift in Sources */,
+				01000000000000000000005C /* PromptContractTests.swift in Sources */,
+				010000000000000000000061 /* LLMProviderContractTests.swift in Sources */,
+				010000000000000000000063 /* OpenAICompatibleProviderTests.swift in Sources */,
+				010000000000000000000066 /* TutorRealDemoTests.swift in Sources */,
+				010000000000000000000069 /* TutorQualityEvaluatorTests.swift in Sources */,
+				01000000000000000000006E /* TutorPanelTests.swift in Sources */,
+				01000000000000000000007C /* RealtimeVoiceSpikeTests.swift in Sources */,
+				010000000000000000000083 /* TutorRuntimeIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

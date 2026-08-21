@@ -107,6 +107,7 @@ final class ActiveApplicationMonitor {
 
   private(set) var isMonitoring = false
   var onLastExternalApplicationChange: ((ActiveApplicationSnapshot?) -> Void)?
+  var onApplicationTermination: ((ActiveApplicationSnapshot) -> Void)?
 
   var currentApplication: ActiveApplicationSnapshot? {
     contextState.rawFrontmostApplication
@@ -169,6 +170,7 @@ final class ActiveApplicationMonitor {
   }
 
   private func recordTermination(_ application: ActiveApplicationSnapshot) {
+    onApplicationTermination?(application)
     let terminatedLastExternal = contextState.lastExternalApplication?.processIdentifier
       == application.processIdentifier
     contextState.removeTerminatedApplication(

@@ -4,10 +4,15 @@ import SwiftUI
 @MainActor
 final class AccessibilityDebugWindowController: NSObject, NSWindowDelegate {
   private let snapshotController: AccessibilitySnapshotController
+  private let liveMonitor: AccessibilityLiveMonitor
   private var window: NSWindow?
 
-  init(snapshotController: AccessibilitySnapshotController) {
+  init(
+    snapshotController: AccessibilitySnapshotController,
+    liveMonitor: AccessibilityLiveMonitor
+  ) {
     self.snapshotController = snapshotController
+    self.liveMonitor = liveMonitor
   }
 
   func show() {
@@ -19,17 +24,19 @@ final class AccessibilityDebugWindowController: NSObject, NSWindowDelegate {
   }
 
   func stop() {
+    liveMonitor.stop()
     snapshotController.cancelCurrentRead(clearSnapshot: true)
     window?.orderOut(nil)
   }
 
   func windowWillClose(_ notification: Notification) {
+    liveMonitor.stop()
     snapshotController.cancelCurrentRead()
   }
 
   private func makeWindow() -> NSWindow {
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 620, height: 700),
+      contentRect: NSRect(x: 0, y: 0, width: 620, height: 980),
       styleMask: [.titled, .closable, .resizable],
       backing: .buffered,
       defer: false
@@ -39,7 +46,10 @@ final class AccessibilityDebugWindowController: NSObject, NSWindowDelegate {
     window.center()
     window.delegate = self
     window.contentViewController = NSHostingController(
-      rootView: AccessibilityDebugView(controller: snapshotController)
+      rootView: AccessibilityDebugView(
+        controller: snapshotController,
+        liveMonitor: liveMonitor
+      )
     )
     return window
   }

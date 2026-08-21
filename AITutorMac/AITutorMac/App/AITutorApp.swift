@@ -17,6 +17,7 @@ struct AITutorApp: App {
         showPetLibrary: appDelegate.showPetLibrary,
         showVoiceSettings: appDelegate.showVoiceSettings,
         showAccessibilityDebug: appDelegate.showAccessibilityDebug,
+        showTutorDebug: appDelegate.showTutorDebug,
         petStateController: appDelegate.petStateController,
         voiceController: appDelegate.voiceController,
         speechInputController: appDelegate.speechInputController,
@@ -32,6 +33,13 @@ struct AITutorApp: App {
       CommandMenu("Context Debug") {
         Button("Accessibility Snapshot…") {
           appDelegate.showAccessibilityDebug()
+        }
+        Button("Tutor Debug…") {
+          appDelegate.showTutorDebug()
+        }
+        Divider()
+        Button("Realtime Voice Spike…") {
+          appDelegate.showRealtimeVoiceSpike()
         }
       }
     }
