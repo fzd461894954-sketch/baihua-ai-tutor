@@ -4,12 +4,19 @@ import SwiftUI
 @MainActor
 struct PushToTalkBubbleView: View {
   let speechInputController: SpeechInputController
+  let tutorNotification: PetTutorNotification?
   let onOpenTutor: () -> Void
 
   var body: some View {
     @Bindable var speechInputController = speechInputController
 
     VStack(alignment: .leading, spacing: 10) {
+      if let tutorNotification,
+         !speechInputController.isInteractionActive {
+        tutorReadyContent(tutorNotification)
+        Divider()
+      }
+
       HStack(spacing: 7) {
         Image(systemName: headerSymbol)
           .foregroundStyle(headerColor)
@@ -40,6 +47,29 @@ struct PushToTalkBubbleView: View {
         .stroke(.primary.opacity(0.08), lineWidth: 1)
     }
     .padding(5)
+  }
+
+  private func tutorReadyContent(
+    _ notification: PetTutorNotification
+  ) -> some View {
+    HStack(alignment: .center, spacing: 9) {
+      Image(systemName: "sparkles")
+        .foregroundStyle(.purple)
+      VStack(alignment: .leading, spacing: 2) {
+        Text("解释已经准备好了")
+          .font(.system(size: 12, weight: .semibold))
+        Text(notification.message)
+          .font(.system(size: 10))
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+      }
+      Spacer(minLength: 4)
+      Button("查看解释") {
+        speechInputController.cancel()
+        onOpenTutor()
+      }
+      .controlSize(.small)
+    }
   }
 
   private var permissionExplanation: some View {

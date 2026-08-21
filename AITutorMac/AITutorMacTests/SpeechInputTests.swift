@@ -298,6 +298,7 @@ final class SpeechInputTests: XCTestCase {
       store: PetStore(defaults: petDefaults),
       stateController: petState,
       speechInputController: controller,
+      tutorNotificationCenter: TutorPetNotificationCenter(),
       animationController: PetAnimationController(reduceMotionProvider: { false }),
       onOpenTutor: {}
     )

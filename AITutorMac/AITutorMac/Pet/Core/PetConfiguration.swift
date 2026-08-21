@@ -10,6 +10,7 @@ struct PetConfiguration: Equatable, Sendable {
   let screenMargin: CGFloat
   let minimumVisibleLength: CGFloat
   let bubbleDuration: TimeInterval
+  let tutorBubbleDuration: TimeInterval
 
   static let `default` = PetConfiguration(
     defaultSize: CGSize(width: 180, height: 180),
@@ -19,7 +20,8 @@ struct PetConfiguration: Equatable, Sendable {
     scaleStep: 0.1,
     screenMargin: 24,
     minimumVisibleLength: 40,
-    bubbleDuration: 3
+    bubbleDuration: 3,
+    tutorBubbleDuration: 5
   )
 
   func clampedScale(_ scale: CGFloat) -> CGFloat {

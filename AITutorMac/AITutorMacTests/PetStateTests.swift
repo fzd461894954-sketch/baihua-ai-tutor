@@ -144,6 +144,7 @@ final class PetStateTests: XCTestCase {
       store: PetStore(defaults: defaults),
       stateController: stateController,
       speechInputController: speechInputController,
+      tutorNotificationCenter: TutorPetNotificationCenter(),
       animationController: animationController,
       onOpenTutor: {}
     )

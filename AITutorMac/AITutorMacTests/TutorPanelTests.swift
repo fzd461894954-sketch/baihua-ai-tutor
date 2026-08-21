@@ -110,15 +110,15 @@ final class TutorPanelTests: XCTestCase {
   func testAutomaticNeedsMoreContextRoutesQuietly() {
     let store = TutorPanelContentStore(availability: .available)
     let presentation = TutorPanelPresentationFixtures.needsMoreContext
-    var notifications: [TutorPresentationModel] = []
+    let notifier = RecordingTutorPetNotifier()
     let router = TutorPresentationRouter(
       contentStore: store,
-      futurePetNotification: { notifications.append($0) }
+      petNotificationSink: notifier
     )
     router.activateSession(presentation.responseMetadata.sessionID)
 
     XCTAssertTrue(router.route(presentation, origin: .automatic))
-    XCTAssertTrue(notifications.isEmpty)
+    XCTAssertTrue(notifier.notifications.isEmpty)
     XCTAssertEqual(store.state, .presentation(presentation))
   }
 
@@ -151,5 +151,19 @@ final class TutorPanelTests: XCTestCase {
       blockReason: value.blockReason,
       didTruncateContent: value.didTruncateContent
     )
+  }
+}
+
+@MainActor
+private final class RecordingTutorPetNotifier: TutorPetNotifying {
+  var notifications: [PetTutorNotification] = []
+  var clearCount = 0
+
+  func notify(_ notification: PetTutorNotification) {
+    notifications.append(notification)
+  }
+
+  func clearTutorNotification() {
+    clearCount += 1
   }
 }

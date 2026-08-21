@@ -5,7 +5,9 @@ import SwiftUI
 final class PetWindowController: NSObject, NSWindowDelegate {
   private enum BubbleLayout {
     static let size = NSSize(width: 250, height: 76)
+    static let tutorSize = NSSize(width: 290, height: 132)
     static let actionSize = NSSize(width: 330, height: 230)
+    static let unreadActionSize = NSSize(width: 350, height: 310)
     static let gap: CGFloat = 8
   }
 
@@ -16,6 +18,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   private let store: PetStore
   private let stateController: PetStateController
   private let speechInputController: SpeechInputController
+  private let tutorNotificationCenter: TutorPetNotificationCenter
   private let animationController: PetAnimationController
   private let onOpenTutor: () -> Void
   private let onScaleChange: (String, Double) -> Void
@@ -24,6 +27,8 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   private var bubblePanel: PetActionPanel?
   private var bubbleDismissTask: Task<Void, Never>?
   private var hiddenTransientTask: Task<Void, Never>?
+  private var displayedTutorNotificationID: UUID?
+  private var isActionBubbleVisible = false
   private var scale: CGFloat
   private var installsObservers = false
 
@@ -35,6 +40,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     store: PetStore = PetStore(),
     stateController: PetStateController,
     speechInputController: SpeechInputController,
+    tutorNotificationCenter: TutorPetNotificationCenter,
     animationController: PetAnimationController? = nil,
     onScaleChange: @escaping (String, Double) -> Void = { _, _ in },
     onOpenTutor: @escaping () -> Void
@@ -46,6 +52,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     self.store = store
     self.stateController = stateController
     self.speechInputController = speechInputController
+    self.tutorNotificationCenter = tutorNotificationCenter
     self.animationController = animationController ?? PetAnimationController()
     self.onScaleChange = onScaleChange
     self.onOpenTutor = onOpenTutor
@@ -54,6 +61,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     )
     super.init()
     stateController.renderer = self
+    tutorNotificationCenter.attachRenderer(self)
   }
 
   func start() {
@@ -155,6 +163,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   func hide() {
     speechInputController.cancel()
     store.saveVisibility(false)
+    tutorNotificationCenter.dismissVisiblePreservingUnread()
     hideWelcomeBubble()
     animationController.stopAndReset()
     panel?.orderOut(nil)
@@ -164,6 +173,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
 
   func stop() {
     speechInputController.cancel()
+    tutorNotificationCenter.clearTutorNotification()
     bubbleDismissTask?.cancel()
     bubbleDismissTask = nil
     hiddenTransientTask?.cancel()
@@ -191,7 +201,9 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   @objc private func openTutor() {
     speechInputController.cancel()
     hideWelcomeBubble()
-    onOpenTutor()
+    if !tutorNotificationCenter.openLatestTutor() {
+      onOpenTutor()
+    }
   }
 
   @objc private func increaseScale() {
@@ -266,6 +278,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
 
     let bubble = bubblePanel ?? makeBubblePanel(content: content)
     bubblePanel = bubble
+    isActionBubbleVisible = false
     bubble.title = ""
     bubble.ignoresMouseEvents = true
     bubble.setContent(
@@ -295,18 +308,28 @@ final class PetWindowController: NSObject, NSWindowDelegate {
 
     bubbleDismissTask?.cancel()
     bubbleDismissTask = nil
+    let tutorNotification = tutorNotificationCenter.hasUnreadTutorPresentation
+      ? tutorNotificationCenter.latestNotification
+      : nil
+    if tutorNotification != nil {
+      tutorNotificationCenter.dismissVisiblePreservingUnread()
+    }
     let bubble = bubblePanel ?? makeBubblePanel(content: .welcome)
     bubblePanel = bubble
+    isActionBubbleVisible = true
     bubble.title = "语音操作"
     bubble.ignoresMouseEvents = false
     bubble.setContent(
       PushToTalkBubbleView(
         speechInputController: speechInputController,
+        tutorNotification: tutorNotification,
         onOpenTutor: { [weak self] in
           self?.openTutor()
         }
       ),
-      size: BubbleLayout.actionSize
+      size: tutorNotification == nil
+        ? BubbleLayout.actionSize
+        : BubbleLayout.unreadActionSize
     )
     positionBubbleIfNeeded()
     NSApplication.shared.activate(ignoringOtherApps: true)
@@ -315,11 +338,16 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   }
 
   private func hideWelcomeBubble() {
+    if displayedTutorNotificationID != nil {
+      tutorNotificationCenter.dismissVisiblePreservingUnread()
+      displayedTutorNotificationID = nil
+    }
     if speechInputController.isInteractionActive {
       speechInputController.cancel()
     }
     bubbleDismissTask?.cancel()
     bubbleDismissTask = nil
+    isActionBubbleVisible = false
     bubblePanel?.orderOut(nil)
   }
 
@@ -386,7 +414,8 @@ final class PetWindowController: NSObject, NSWindowDelegate {
         pet: pet,
         petImage: petImage,
         stateController: stateController,
-        speechInputController: speechInputController
+        speechInputController: speechInputController,
+        tutorNotificationCenter: tutorNotificationCenter
       )
     )
     animationController.attach(to: interactionView.animatedLayer)
@@ -483,7 +512,8 @@ extension PetWindowController: PetStateRendering {
   func prepareForStateTransition(from state: PetState) {
     hiddenTransientTask?.cancel()
     hiddenTransientTask = nil
-    if !speechInputController.isInteractionActive {
+    if !speechInputController.isInteractionActive,
+       tutorNotificationCenter.visibleNotification == nil {
       hideWelcomeBubble()
     }
     animationController.stopAndReset()
@@ -511,8 +541,53 @@ extension PetWindowController: PetStateRendering {
     animationController.play(state, completion: completion)
 
     if let bubble = PetBubble.automatic(for: state) {
+      tutorNotificationCenter.dismissVisiblePreservingUnread()
       showBubble(bubble)
     }
+  }
+}
+
+extension PetWindowController: PetTutorNotificationRendering {
+  @discardableResult
+  func presentTutorNotification(_ notification: PetTutorNotification) -> Bool {
+    guard notification.priority == .tutorNotification,
+          !speechInputController.isInteractionActive,
+          !isActionBubbleVisible,
+          PetBubblePriority.automaticPriority(for: stateController.currentState) == nil,
+          appState.isPetVisible,
+          let panel,
+          panel.isVisible else {
+      return false
+    }
+
+    bubbleDismissTask?.cancel()
+    bubbleDismissTask = nil
+    let bubble = bubblePanel ?? makeBubblePanel(content: .welcome)
+    bubblePanel = bubble
+    displayedTutorNotificationID = notification.id
+    isActionBubbleVisible = false
+    bubble.title = "教学提醒"
+    bubble.ignoresMouseEvents = false
+    bubble.setContent(
+      PetTutorBubbleView(
+        notification: notification,
+        onOpenTutor: { [weak self] in
+          self?.openTutor()
+        }
+      ),
+      size: BubbleLayout.tutorSize
+    )
+    positionBubbleIfNeeded()
+    bubble.orderFrontRegardless()
+    return true
+  }
+
+  func dismissTutorNotification(id: UUID) {
+    guard displayedTutorNotificationID == id else {
+      return
+    }
+    displayedTutorNotificationID = nil
+    bubblePanel?.orderOut(nil)
   }
 }
 

@@ -13,17 +13,20 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
   private let appState: AppState
   private let contentStore: TutorPanelContentStore
   private let actionHandler: TutorPanelActionHandler
+  private let onVisibilityChange: @MainActor (Bool) -> Void
   private var panel: NSPanel?
   private var escapeKeyMonitor: Any?
 
   init(
     appState: AppState,
     contentStore: TutorPanelContentStore,
-    actionHandler: TutorPanelActionHandler
+    actionHandler: TutorPanelActionHandler,
+    onVisibilityChange: @escaping @MainActor (Bool) -> Void = { _ in }
   ) {
     self.appState = appState
     self.contentStore = contentStore
     self.actionHandler = actionHandler
+    self.onVisibilityChange = onVisibilityChange
     super.init()
   }
 
@@ -80,7 +83,12 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
 
   func show() {
     create()
-    guard let panel, !panel.isVisible else {
+    guard let panel else {
+      return
+    }
+    if panel.isVisible {
+      appState.isPanelVisible = true
+      onVisibilityChange(true)
       return
     }
 
@@ -88,6 +96,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     panel.orderFrontRegardless()
     panel.makeKey()
     appState.isPanelVisible = true
+    onVisibilityChange(true)
     AppLogger.panel.info("Panel shown")
   }
 
@@ -99,6 +108,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     removeEscapeKeyMonitor()
     panel.orderOut(nil)
     appState.isPanelVisible = false
+    onVisibilityChange(false)
     AppLogger.panel.info("Panel hidden")
   }
 
@@ -114,6 +124,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     removeEscapeKeyMonitor()
     panel?.orderOut(nil)
     appState.isPanelVisible = false
+    onVisibilityChange(false)
   }
 
   func windowShouldClose(_ sender: NSWindow) -> Bool {

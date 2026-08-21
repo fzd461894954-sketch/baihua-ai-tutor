@@ -5,35 +5,39 @@ enum TutorPresentationRouteOrigin: Equatable, Sendable {
   case automatic
 }
 
-/// A future notification seam only. No Pet implementation is connected in
-/// STEP 09-1.
-typealias TutorFuturePetNotification = @MainActor @Sendable (
-  TutorPresentationModel
-) -> Void
-
 /// Routes an already scheduled presentation into Panel UI state. It neither
 /// creates lessons nor owns window visibility.
 @MainActor
 final class TutorPresentationRouter {
   private let contentStore: TutorPanelContentStore
-  private let futurePetNotification: TutorFuturePetNotification?
+  private let petNotificationSink: (any TutorPetNotifying)?
+  private let petBubbleAdapter: TutorPetBubbleAdapter
+  private let isPanelVisible: @MainActor () -> Bool
 
   private(set) var activeSessionID: UUID?
 
   init(
     contentStore: TutorPanelContentStore,
-    futurePetNotification: TutorFuturePetNotification? = nil
+    petNotificationSink: (any TutorPetNotifying)? = nil,
+    petBubbleAdapter: TutorPetBubbleAdapter = TutorPetBubbleAdapter(),
+    isPanelVisible: @escaping @MainActor () -> Bool = { false }
   ) {
     self.contentStore = contentStore
-    self.futurePetNotification = futurePetNotification
+    self.petNotificationSink = petNotificationSink
+    self.petBubbleAdapter = petBubbleAdapter
+    self.isPanelVisible = isPanelVisible
   }
 
   func activateSession(_ sessionID: UUID) {
+    if activeSessionID != sessionID {
+      petNotificationSink?.clearTutorNotification()
+    }
     activeSessionID = sessionID
   }
 
   func deactivateSession() {
     activeSessionID = nil
+    petNotificationSink?.clearTutorNotification()
   }
 
   @discardableResult
@@ -51,12 +55,28 @@ final class TutorPresentationRouter {
 
     contentStore.present(presentation)
 
-    // A route never opens the window. Automatic needs-more-context results
-    // also stay quiet instead of producing a future Pet notification.
-    if origin == .automatic, presentation.outcome != .needsMoreContext {
-      futurePetNotification?(presentation)
+    // A route never opens the window. STEP 09-3 only notifies for an explicit
+    // user request that completed while the full Panel was hidden.
+    if origin == .userInitiated, !isPanelVisible() {
+      petNotificationSink?.notify(
+        petBubbleAdapter.makeNotification(from: presentation)
+      )
     }
     return true
+  }
+
+  func routeError(
+    _ error: TutorPanelErrorPresentation,
+    origin: TutorPresentationRouteOrigin
+  ) {
+    contentStore.presentError(error)
+    if origin == .userInitiated, !isPanelVisible() {
+      petNotificationSink?.notify(petBubbleAdapter.makeErrorNotification())
+    }
+  }
+
+  func clearTutorNotification() {
+    petNotificationSink?.clearTutorNotification()
   }
 
   private static func isValid(

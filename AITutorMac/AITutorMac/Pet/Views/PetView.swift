@@ -6,6 +6,7 @@ struct PetView: View {
   let petImage: NSImage?
   let stateController: PetStateController
   let speechInputController: SpeechInputController
+  let tutorNotificationCenter: TutorPetNotificationCenter
 
   var body: some View {
     ZStack {
@@ -24,6 +25,9 @@ struct PetView: View {
               state: stateController.currentState,
               symbolName: symbolName
             )
+          } else if tutorNotificationCenter.hasUnreadTutorPresentation,
+                    !speechInputController.isMicrophoneActive {
+            TutorUnreadBadgeView()
           }
         }
         Spacer()
@@ -34,8 +38,15 @@ struct PetView: View {
     .contentShape(Rectangle())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("桌面吉祥物，\(pet.name)")
-    .accessibilityValue(stateController.currentState.displayName)
+    .accessibilityValue(accessibilityValue)
     .accessibilityHint("单击打开语音操作，双击打开教学窗口")
+  }
+
+  private var accessibilityValue: String {
+    if tutorNotificationCenter.hasUnreadTutorPresentation {
+      return "\(stateController.currentState.displayName)，有新的解释"
+    }
+    return stateController.currentState.displayName
   }
 
   @ViewBuilder
@@ -49,6 +60,19 @@ struct PetView: View {
     } else {
       PetAssetPlaceholder(petName: pet.name)
     }
+  }
+}
+
+private struct TutorUnreadBadgeView: View {
+  var body: some View {
+    Circle()
+      .fill(.purple)
+      .frame(width: 12, height: 12)
+      .overlay {
+        Circle().stroke(.white.opacity(0.9), lineWidth: 1.5)
+      }
+      .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+      .accessibilityHidden(true)
   }
 }
 
@@ -112,6 +136,39 @@ struct PetBubbleView: View {
         Text(detail)
           .font(.system(size: 12))
           .foregroundStyle(.secondary)
+      }
+    }
+    .padding(.horizontal, 14)
+    .padding(.vertical, 11)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .stroke(.primary.opacity(0.08), lineWidth: 1)
+    }
+    .padding(5)
+  }
+}
+
+struct PetTutorBubbleView: View {
+  let notification: PetTutorNotification
+  let onOpenTutor: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 7) {
+      Text(notification.title)
+        .font(.system(size: 14, weight: .semibold))
+
+      Text(notification.message)
+        .font(.system(size: 12))
+        .foregroundStyle(.secondary)
+        .lineLimit(2)
+
+      HStack {
+        Spacer()
+        Button("查看解释", action: onOpenTutor)
+          .controlSize(.small)
+          .buttonStyle(.borderedProminent)
       }
     }
     .padding(.horizontal, 14)

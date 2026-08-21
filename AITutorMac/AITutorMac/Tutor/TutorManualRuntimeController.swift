@@ -51,7 +51,7 @@ final class TutorManualRuntimeController {
       guard let self, error != .cancelled else {
         return
       }
-      self.contentStore.presentError(.requestFailed)
+      self.router.routeError(.requestFailed, origin: .userInitiated)
       self.requestedChunkID = nil
       self.state = .failed
     }
@@ -105,6 +105,7 @@ final class TutorManualRuntimeController {
     case .dismissCurrentPresentation:
       cancelPendingWork()
       contentStore.clear()
+      router.clearTutorNotification()
       state = .idle
     case .openModelSettings:
       break
@@ -148,7 +149,7 @@ final class TutorManualRuntimeController {
           guard self.owns(generation: generation, sessionID: sessionID) else {
             return
           }
-          self.contentStore.presentError(.modelNotConfigured)
+          self.router.routeError(.modelNotConfigured, origin: .userInitiated)
           self.requestedChunkID = nil
           self.state = .failed
           self.actionTask = nil
@@ -164,7 +165,7 @@ final class TutorManualRuntimeController {
           return
         }
         self.actionTask = nil
-        self.contentStore.presentError(.noStableContent)
+        self.router.routeError(.noStableContent, origin: .userInitiated)
         self.requestedChunkID = nil
         self.state = .failed
       }

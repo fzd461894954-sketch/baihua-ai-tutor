@@ -5,6 +5,7 @@ final class AppContainer {
   let panelController: FloatingPanelController
   let tutorPanelContentStore: TutorPanelContentStore
   let tutorPresentationRouter: TutorPresentationRouter
+  let tutorPetNotificationCenter: TutorPetNotificationCenter
   let petStateController: PetStateController
   let petWindowController: PetWindowController
   let petLibrary: PetLibrary
@@ -138,8 +139,13 @@ final class AppContainer {
     let tutorPanelContentStore = TutorPanelContentStore(
       availability: initialTutorAvailability
     )
+    let tutorPetNotificationCenter = TutorPetNotificationCenter(
+      autoDismissDuration: PetConfiguration.default.tutorBubbleDuration
+    )
     let tutorPresentationRouter = TutorPresentationRouter(
-      contentStore: tutorPanelContentStore
+      contentStore: tutorPanelContentStore,
+      petNotificationSink: tutorPetNotificationCenter,
+      isPanelVisible: { appState.isPanelVisible }
     )
     let currentContentProvider = CurrentExplainableContentProvider()
     let productionTutorEngine = ProductionTutorEngine(
@@ -208,10 +214,16 @@ final class AppContainer {
     }
     self.tutorPanelContentStore = tutorPanelContentStore
     self.tutorPresentationRouter = tutorPresentationRouter
+    self.tutorPetNotificationCenter = tutorPetNotificationCenter
     let panelController = FloatingPanelController(
       appState: appState,
       contentStore: tutorPanelContentStore,
-      actionHandler: tutorPanelActionHandler
+      actionHandler: tutorPanelActionHandler,
+      onVisibilityChange: { [weak tutorPetNotificationCenter] isVisible in
+        if isVisible {
+          tutorPetNotificationCenter?.panelDidBecomeVisible()
+        }
+      }
     )
     let petStateController = PetStateController()
     let libraryStore = PetLibraryStore()
@@ -242,6 +254,7 @@ final class AppContainer {
       petImage: petLibrary.image(for: petLibrary.currentPet),
       stateController: petStateController,
       speechInputController: speechInputController,
+      tutorNotificationCenter: tutorPetNotificationCenter,
       onScaleChange: { [weak petLibrary] id, scale in
         petLibrary?.updateScale(for: id, scale: scale)
       }
@@ -249,6 +262,9 @@ final class AppContainer {
       panelController?.show()
     }
     self.petWindowController = petWindowController
+    tutorPetNotificationCenter.onOpenTutor = { [weak panelController] in
+      panelController?.show()
+    }
     petLibraryWindowController = PetLibraryWindowController(
       library: petLibrary,
       importer: petImporter
