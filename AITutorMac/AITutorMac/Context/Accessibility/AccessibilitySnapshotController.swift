@@ -206,6 +206,13 @@ final class AccessibilitySnapshotController: LiveSnapshotRequesting {
     cancelCurrentRead()
   }
 
+  func cancelManualRead() {
+    guard case .manual = activeRequestKind else {
+      return
+    }
+    cancelCurrentRead()
+  }
+
   func cancelCurrentRead(clearSnapshot: Bool = false) {
     let cancelledRequestKind = activeRequestKind
     cancellationToken?.cancel()

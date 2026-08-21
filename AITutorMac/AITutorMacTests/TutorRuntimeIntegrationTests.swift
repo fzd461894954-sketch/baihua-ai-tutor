@@ -33,6 +33,64 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     XCTAssertFalse(provider.hasStableContent)
   }
 
+  func testTenChunksReturnLatestHighConfidenceChunkForManualExplain() throws {
+    let provider = CurrentExplainableContentProvider()
+    let sessionID = UUID()
+    let start = Date(timeIntervalSince1970: 1_000)
+    provider.beginSession(sessionID)
+
+    var latest: SemanticChunk?
+    for index in 1...10 {
+      let chunk = makeChunk(
+        text: "stable chunk \(index)",
+        confidence: index == 10 ? .high : .medium,
+        revisionID: index,
+        createdAt: start.addingTimeInterval(TimeInterval(index))
+      )
+      XCTAssertEqual(provider.receive(chunk, sessionID: sessionID), .accepted)
+      latest = chunk
+    }
+
+    XCTAssertEqual(try provider.currentSemanticChunk(), latest)
+#if DEBUG
+    let diagnostics = provider.diagnosticSnapshot
+    XCTAssertEqual(diagnostics.chunksReceived, 10)
+    XCTAssertEqual(diagnostics.chunksAccepted, 10)
+    XCTAssertEqual(diagnostics.chunksRejected, 0)
+    XCTAssertEqual(diagnostics.latestConfidence, .high)
+    XCTAssertEqual(diagnostics.latestChunkRevision, 10)
+    XCTAssertEqual(diagnostics.lastRetrievalResult, .available)
+    XCTAssertTrue(diagnostics.isAvailable)
+#endif
+  }
+
+  func testSessionReplacementStopAndWrongSessionAreDeterministic() throws {
+    let provider = CurrentExplainableContentProvider()
+    let sessionA = UUID()
+    let sessionB = UUID()
+    let chunkA = makeChunk(text: "session A")
+    let wrongChunk = makeChunk(text: "late session A")
+    let chunkB = makeChunk(text: "session B")
+
+    provider.beginSession(sessionA)
+    XCTAssertEqual(provider.receive(chunkA, sessionID: sessionA), .accepted)
+    provider.beginSession(sessionB)
+    XCTAssertThrowsError(try provider.currentSemanticChunk())
+    XCTAssertEqual(
+      provider.receive(wrongChunk, sessionID: sessionA),
+      .rejected(.wrongSession)
+    )
+    XCTAssertEqual(provider.receive(chunkB, sessionID: sessionB), .accepted)
+    XCTAssertEqual(try provider.currentSemanticChunk(), chunkB)
+
+    provider.invalidateSession(sessionB)
+    XCTAssertThrowsError(try provider.currentSemanticChunk())
+    XCTAssertEqual(
+      provider.receive(chunkB, sessionID: sessionB),
+      .rejected(.invalidatedSession)
+    )
+  }
+
 #if DEBUG
   func testRealDemoConfigurationIsClearedOnShutdown() {
     let configurationStore = DebugLLMConfigurationStore()
@@ -90,6 +148,30 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     }
     XCTAssertEqual(runtime.coordinator.latestRequest?.trigger, .userInitiated)
     XCTAssertEqual(runtime.controller.state, .completed)
+  }
+
+  func testPanelDismissAndPresentationUpdateDoNotClearCurrentContent() throws {
+    let runtime = makeRuntime(engine: LLMTutorEngine(provider: FakeLLMProvider()))
+    let sessionID = UUID()
+    let chunk = makeChunk()
+    runtime.controller.liveSessionDidStart(sessionID)
+    runtime.controller.receive(chunk, sessionID: sessionID)
+
+    runtime.store.present(TutorPanelPresentationFixtures.apiLesson)
+    runtime.controller.handle(.dismissCurrentPresentation)
+
+    XCTAssertEqual(try runtime.contentProvider.currentSemanticChunk(), chunk)
+    XCTAssertTrue(runtime.contentProvider.hasStableContent)
+  }
+
+  func testCompositionRootRuntimeUsesInjectedCurrentContentProvider() {
+    let runtime = makeRuntime(engine: LLMTutorEngine(provider: FakeLLMProvider()))
+
+    XCTAssertTrue(runtime.controller.usesContentProvider(runtime.contentProvider))
+    XCTAssertEqual(
+      runtime.controller.currentContentDiagnosticSnapshot.providerInstanceIdentity,
+      runtime.contentProvider.diagnosticSnapshot.providerInstanceIdentity
+    )
   }
 
   func testMissingConfigurationDoesNotCallProvider() async {
@@ -248,20 +330,27 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
       contentStore: store,
       prepareEngine: prepareEngine
     )
-    return RuntimeFixture(store: store, coordinator: coordinator, controller: controller)
+    return RuntimeFixture(
+      store: store,
+      contentProvider: contentProvider,
+      coordinator: coordinator,
+      controller: controller
+    )
   }
 #endif
 
   private func makeChunk(
     text: String = "JSON 是一种结构化数据格式。",
-    confidence: DiffConfidence = .high
+    confidence: DiffConfidence = .high,
+    revisionID: Int = 1,
+    createdAt: Date = Date()
   ) -> SemanticChunk {
     SemanticChunk(
       id: UUID(),
-      sourceRevisionID: 1,
+      sourceRevisionID: revisionID,
       text: text,
       confidence: confidence,
-      createdAt: Date(),
+      createdAt: createdAt,
       flushReason: .idleTimeout
     )
   }
@@ -287,6 +376,7 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
 @MainActor
 private struct RuntimeFixture {
   let store: TutorPanelContentStore
+  let contentProvider: CurrentExplainableContentProvider
   let coordinator: TutorCoordinator
   let controller: TutorManualRuntimeController
 }

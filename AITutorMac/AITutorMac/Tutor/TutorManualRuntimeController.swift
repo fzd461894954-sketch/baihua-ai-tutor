@@ -62,6 +62,9 @@ final class TutorManualRuntimeController {
   }
 
   func liveSessionDidStart(_ sessionID: UUID) {
+    AppLogger.tutorRuntime.info(
+      "Tutor runtime received live session start session=\(sessionID.uuidString, privacy: .public)"
+    )
     cancelPendingWork()
     if state == .loading {
       contentStore.clear()
@@ -74,6 +77,7 @@ final class TutorManualRuntimeController {
   }
 
   func liveSessionDidEnd() {
+    AppLogger.tutorRuntime.info("Tutor runtime received live session end")
     cancelPendingWork()
     activeSessionID = nil
     contentProvider.invalidateSession()
@@ -85,7 +89,15 @@ final class TutorManualRuntimeController {
     state = .idle
   }
 
-  func receive(_ chunk: SemanticChunk, sessionID: UUID) {
+  @discardableResult
+  func receive(
+    _ chunk: SemanticChunk,
+    sessionID: UUID
+  ) -> CurrentExplainableContentReceiveResult {
+    let result = contentProvider.receive(chunk, sessionID: sessionID)
+    guard result == .accepted else {
+      return result
+    }
     if
       state == .loading,
       let requestedChunkID,
@@ -95,7 +107,7 @@ final class TutorManualRuntimeController {
       contentStore.clear()
       state = .idle
     }
-    contentProvider.receive(chunk, sessionID: sessionID)
+    return result
   }
 
   func handle(_ intent: TutorPanelActionIntent) {
@@ -133,6 +145,10 @@ final class TutorManualRuntimeController {
   }
 
   private func explainCurrentContent() {
+    let sessionDescription = activeSessionID?.uuidString ?? "none"
+    AppLogger.tutorRuntime.info(
+      "Manual explain requested session=\(sessionDescription, privacy: .public) providerAvailable=\(self.contentProvider.hasStableContent, privacy: .public)"
+    )
     cancelPendingWork()
     contentStore.setLoading()
     state = .loading
@@ -187,4 +203,14 @@ final class TutorManualRuntimeController {
       && generation == actionGeneration
       && activeSessionID == sessionID
   }
+
+#if DEBUG
+  func usesContentProvider(_ provider: CurrentExplainableContentProvider) -> Bool {
+    contentProvider === provider
+  }
+
+  var currentContentDiagnosticSnapshot: CurrentExplainableContentDiagnosticSnapshot {
+    contentProvider.diagnosticSnapshot
+  }
+#endif
 }

@@ -214,6 +214,9 @@ final class SemanticBuffer {
     } else {
       state = .buffering
     }
+    AppLogger.tutorRuntime.debug(
+      "Semantic chunk emitted id=\(chunk.id.uuidString, privacy: .public) revision=\(chunk.sourceRevisionID, privacy: .public) confidence=\(chunk.confidence.rawValue, privacy: .public) flush=\(chunk.flushReason.rawValue, privacy: .public) characters=\(chunk.text.count, privacy: .public) emitted=\(self.chunkCount, privacy: .public)"
+    )
     onChunk?(chunk)
     return chunk
   }

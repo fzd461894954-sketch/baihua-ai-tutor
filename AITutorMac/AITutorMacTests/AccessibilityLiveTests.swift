@@ -308,6 +308,45 @@ final class AccessibilityLiveTests: XCTestCase {
     XCTAssertFalse(harness.monitor.semanticBuffer.hasScheduledFlushTask)
   }
 
+  func testClosingDebugWindowKeepsLiveSessionAndAcceptedCurrentContent() throws {
+    let harness = makeHarness()
+    let provider = CurrentExplainableContentProvider()
+    var startedSessionID: UUID?
+    harness.monitor.onLiveSessionChange = { sessionID in
+      if let sessionID {
+        startedSessionID = sessionID
+        provider.beginSession(sessionID)
+      } else {
+        provider.invalidateSession()
+      }
+    }
+    harness.monitor.start()
+    let sessionID = try XCTUnwrap(startedSessionID)
+    let chunk = SemanticChunk(
+      id: UUID(),
+      sourceRevisionID: 10,
+      text: "stable metadata-only test content",
+      confidence: .high,
+      createdAt: Date(),
+      flushReason: .sentenceComplete
+    )
+    provider.receive(chunk, sessionID: sessionID)
+    let snapshotController = AccessibilitySnapshotController(contextState: ContextState())
+    let windowController = AccessibilityDebugWindowController(
+      snapshotController: snapshotController,
+      liveMonitor: harness.monitor
+    )
+
+    windowController.windowWillClose(
+      Notification(name: Notification.Name("AccessibilityDebugWindowTestClose"))
+    )
+
+    XCTAssertEqual(harness.monitor.state, .watching)
+    XCTAssertTrue(harness.observer.isRunning)
+    XCTAssertEqual(harness.observer.stopCallCount, 0)
+    XCTAssertEqual(try provider.currentSemanticChunk(), chunk)
+  }
+
   private var fastConfiguration: AccessibilityLiveConfiguration {
     AccessibilityLiveConfiguration(
       minimumSnapshotInterval: 0.02,

@@ -128,6 +128,28 @@ final class TutorVoiceTests: XCTestCase {
     XCTAssertTrue(coordinator.isPlaying(presentation))
   }
 
+  func testTutorVoicePlaybackDoesNotClearAcceptedCurrentContent() throws {
+    let contentProvider = CurrentExplainableContentProvider()
+    let sessionID = UUID()
+    let chunk = SemanticChunk(
+      id: UUID(),
+      sourceRevisionID: 10,
+      text: "current tutor source",
+      confidence: .high,
+      createdAt: Date(),
+      flushReason: .sentenceComplete
+    )
+    contentProvider.beginSession(sessionID)
+    contentProvider.receive(chunk, sessionID: sessionID)
+    let output = TutorVoiceOutputSpy()
+    let coordinator = TutorVoiceCoordinator(voiceController: output)
+
+    XCTAssertTrue(coordinator.play(TutorPanelPresentationFixtures.apiLesson))
+
+    XCTAssertEqual(try contentProvider.currentSemanticChunk(), chunk)
+    XCTAssertTrue(contentProvider.hasStableContent)
+  }
+
   func testNewVoiceReplacesOldVoiceWithoutQueue() {
     let pet = PetStateController()
     let synthesizer = TutorSpeechSynthesizerSpy()

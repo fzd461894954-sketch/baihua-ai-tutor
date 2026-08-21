@@ -27,6 +27,7 @@ final class AppContainer {
   let aiModelSettingsController: AIModelSettingsController
   let aiModelSettingsWindowController: AIModelSettingsWindowController
   let tutorPanelCoordinator: TutorCoordinator
+  let currentExplainableContentProvider: CurrentExplainableContentProvider
   let tutorManualRuntimeController: TutorManualRuntimeController
 #if DEBUG
   let tutorCoordinator: TutorCoordinator
@@ -149,6 +150,7 @@ final class AppContainer {
       isPanelVisible: { appState.isPanelVisible }
     )
     let currentContentProvider = CurrentExplainableContentProvider()
+    self.currentExplainableContentProvider = currentContentProvider
     let productionTutorEngine = ProductionTutorEngine(
       providerFactory: tutorProviderFactory
     )
@@ -227,16 +229,26 @@ final class AppContainer {
 #endif
     accessibilityLiveMonitor.onLiveSessionChange = { [weak tutorManualRuntimeController] sessionID in
       if let sessionID {
+        AppLogger.tutorRuntime.info(
+          "Live session bridge started session=\(sessionID.uuidString, privacy: .public)"
+        )
         tutorManualRuntimeController?.liveSessionDidStart(sessionID)
       } else {
+        AppLogger.tutorRuntime.info("Live session bridge ended")
         tutorManualRuntimeController?.liveSessionDidEnd()
       }
     }
     semanticBuffer.onChunk = { [weak tutorManualRuntimeController] chunk in
       guard let sessionID = tutorManualRuntimeController?.activeSessionID else {
+        AppLogger.tutorRuntime.notice(
+          "Provider bridge received chunk id=\(chunk.id.uuidString, privacy: .public) revision=\(chunk.sourceRevisionID, privacy: .public) characters=\(chunk.text.count, privacy: .public) result=noActiveSession"
+        )
         return
       }
-      tutorManualRuntimeController?.receive(chunk, sessionID: sessionID)
+      AppLogger.tutorRuntime.debug(
+        "Provider bridge received chunk id=\(chunk.id.uuidString, privacy: .public) session=\(sessionID.uuidString, privacy: .public) revision=\(chunk.sourceRevisionID, privacy: .public) confidence=\(chunk.confidence.rawValue, privacy: .public) flush=\(chunk.flushReason.rawValue, privacy: .public) characters=\(chunk.text.count, privacy: .public)"
+      )
+      _ = tutorManualRuntimeController?.receive(chunk, sessionID: sessionID)
     }
     aiModelSettingsController.onConfigurationDidChange = {
       [weak tutorManualRuntimeController, weak tutorPanelContentStore, weak tutorProviderFactory] in

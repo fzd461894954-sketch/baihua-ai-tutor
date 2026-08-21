@@ -30,8 +30,9 @@ final class AccessibilityDebugWindowController: NSObject, NSWindowDelegate {
   }
 
   func windowWillClose(_ notification: Notification) {
-    liveMonitor.stop()
-    snapshotController.cancelCurrentRead()
+    // Closing diagnostics must not own or invalidate the user's live session.
+    // Live Watch remains controlled by its explicit stop action and app shutdown.
+    snapshotController.cancelManualRead()
   }
 
   private func makeWindow() -> NSWindow {
