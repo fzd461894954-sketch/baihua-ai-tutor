@@ -135,6 +135,11 @@
 		010000000000000000000081 /* TutorManualRuntimeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000081 /* TutorManualRuntimeController.swift */; };
 		010000000000000000000082 /* DebugLLMConfigurationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000082 /* DebugLLMConfigurationStore.swift */; };
 		010000000000000000000083 /* TutorRuntimeIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000083 /* TutorRuntimeIntegrationTests.swift */; };
+		010000000000000000000084 /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000084 /* CredentialStore.swift */; };
+		010000000000000000000085 /* LLMProviderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000085 /* LLMProviderSettings.swift */; };
+		010000000000000000000086 /* TutorProviderFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000086 /* TutorProviderFactory.swift */; };
+		010000000000000000000087 /* AIModelSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000087 /* AIModelSettingsView.swift */; };
+		010000000000000000000088 /* ProviderSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000088 /* ProviderSettingsTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -279,6 +284,11 @@
 		020000000000000000000081 /* TutorManualRuntimeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorManualRuntimeController.swift; sourceTree = "<group>"; };
 		020000000000000000000082 /* DebugLLMConfigurationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLLMConfigurationStore.swift; sourceTree = "<group>"; };
 		020000000000000000000083 /* TutorRuntimeIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorRuntimeIntegrationTests.swift; sourceTree = "<group>"; };
+		020000000000000000000084 /* CredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialStore.swift; sourceTree = "<group>"; };
+		020000000000000000000085 /* LLMProviderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProviderSettings.swift; sourceTree = "<group>"; };
+		020000000000000000000086 /* TutorProviderFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorProviderFactory.swift; sourceTree = "<group>"; };
+		020000000000000000000087 /* AIModelSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIModelSettingsView.swift; sourceTree = "<group>"; };
+		020000000000000000000088 /* ProviderSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSettingsTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -411,6 +421,7 @@
 				020000000000000000000071 /* TutorPanelTests.swift */,
 				02000000000000000000007F /* RealtimeVoiceSpikeTests.swift */,
 				020000000000000000000083 /* TutorRuntimeIntegrationTests.swift */,
+				020000000000000000000088 /* ProviderSettingsTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -696,6 +707,7 @@
 			children = (
 				070000000000000000000024 /* PromptBuilder */,
 				070000000000000000000025 /* LLM */,
+				070000000000000000000029 /* Settings */,
 				02000000000000000000004C /* TutorRequest.swift */,
 				02000000000000000000004D /* TutorResponse.swift */,
 				02000000000000000000004E /* TutorEngine.swift */,
@@ -747,6 +759,17 @@
 				020000000000000000000050 /* FakeLLMProvider.swift */,
 			);
 			path = LLM;
+			sourceTree = "<group>";
+		};
+		070000000000000000000029 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000084 /* CredentialStore.swift */,
+				020000000000000000000085 /* LLMProviderSettings.swift */,
+				020000000000000000000086 /* TutorProviderFactory.swift */,
+				020000000000000000000087 /* AIModelSettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -936,6 +959,10 @@
 				010000000000000000000065 /* TutorRealDemoView.swift in Sources */,
 				010000000000000000000068 /* TutorEvaluationDataset.swift in Sources */,
 				010000000000000000000082 /* DebugLLMConfigurationStore.swift in Sources */,
+				010000000000000000000084 /* CredentialStore.swift in Sources */,
+				010000000000000000000085 /* LLMProviderSettings.swift in Sources */,
+				010000000000000000000086 /* TutorProviderFactory.swift in Sources */,
+				010000000000000000000087 /* AIModelSettingsView.swift in Sources */,
 				01000000000000000000006F /* RealtimeVoiceSessionState.swift in Sources */,
 				010000000000000000000070 /* RealtimeVoiceFailure.swift in Sources */,
 				010000000000000000000071 /* RealtimeVoiceEvent.swift in Sources */,
@@ -981,6 +1008,7 @@
 				01000000000000000000006E /* TutorPanelTests.swift in Sources */,
 				01000000000000000000007C /* RealtimeVoiceSpikeTests.swift in Sources */,
 				010000000000000000000083 /* TutorRuntimeIntegrationTests.swift in Sources */,
+				010000000000000000000088 /* ProviderSettingsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

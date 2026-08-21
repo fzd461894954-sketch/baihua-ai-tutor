@@ -16,4 +16,9 @@ enum LLMProviderError: Error, Equatable, Sendable {
   case invalidResponse
   case unavailable
   case decodingFailed
+  case authenticationFailed
+  case modelUnavailable
+  case rateLimited
+  case networkUnavailable
+  case invalidEndpoint
 }

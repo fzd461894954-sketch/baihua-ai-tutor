@@ -8,7 +8,7 @@ enum TutorManualRuntimeState: String, Equatable, Sendable {
   case failed
 }
 
-/// Debug-only composition controller for the explicit Panel action. It owns no
+/// Composition controller for the explicit Panel action. It owns no
 /// source body, prompt, raw response, credential, or response history.
 @MainActor
 @Observable
@@ -106,6 +106,8 @@ final class TutorManualRuntimeController {
       cancelPendingWork()
       contentStore.clear()
       state = .idle
+    case .openModelSettings:
+      break
 #if DEBUG
     case .showDebugFixture:
       break
@@ -117,6 +119,14 @@ final class TutorManualRuntimeController {
     liveSessionDidEnd()
     coordinator.onPresentationReady = nil
     coordinator.onRequestFailure = nil
+  }
+
+  func providerConfigurationDidChange() {
+    cancelPendingWork()
+    if state == .loading {
+      contentStore.clear()
+    }
+    state = .idle
   }
 
   private func explainCurrentContent() {

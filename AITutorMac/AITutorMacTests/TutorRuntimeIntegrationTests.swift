@@ -34,7 +34,7 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
   }
 
 #if DEBUG
-  func testRealDemoAndPanelRuntimeShareOnlyInMemoryConfiguration() {
+  func testRealDemoConfigurationIsClearedOnShutdown() {
     let configurationStore = DebugLLMConfigurationStore()
     let controller = TutorRealDemoController(configurationStore: configurationStore)
     let configuration = DebugLLMConfiguration(
@@ -192,6 +192,25 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     }
 
     XCTAssertEqual(runtime.coordinator.requestCount, 2)
+    let cancelCount = await provider.cancelCallCount
+    XCTAssertGreaterThanOrEqual(cancelCount, 1)
+  }
+
+  func testProviderConfigurationChangeCancelsActiveRequest() async {
+    let provider = FakeLLMProvider(responseDelayNanoseconds: 200_000_000)
+    let runtime = makeRuntime(engine: LLMTutorEngine(provider: provider))
+    let sessionID = UUID()
+    runtime.controller.liveSessionDidStart(sessionID)
+    runtime.controller.receive(makeChunk(), sessionID: sessionID)
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually { await provider.generateCallCount == 1 }
+
+    runtime.controller.providerConfigurationDidChange()
+    try? await Task.sleep(nanoseconds: 240_000_000)
+
+    XCTAssertEqual(runtime.controller.state, .idle)
+    XCTAssertEqual(runtime.store.state, .empty(availability: .available))
+    XCTAssertNil(runtime.coordinator.latestPresentation)
     let cancelCount = await provider.cancelCallCount
     XCTAssertGreaterThanOrEqual(cancelCount, 1)
   }

@@ -19,13 +19,17 @@ final class AppContainer {
   let semanticBuffer: SemanticBuffer
   let accessibilityLiveMonitor: AccessibilityLiveMonitor
   let accessibilityDebugWindowController: AccessibilityDebugWindowController
+  let llmProviderSettingsStore: LLMProviderSettingsStore
+  let credentialStore: KeychainCredentialStore
+  let tutorProviderFactory: TutorProviderFactory
+  let aiModelSettingsController: AIModelSettingsController
+  let aiModelSettingsWindowController: AIModelSettingsWindowController
+  let tutorPanelCoordinator: TutorCoordinator
+  let tutorManualRuntimeController: TutorManualRuntimeController
 #if DEBUG
   let tutorCoordinator: TutorCoordinator
   let tutorDebugWindowController: TutorDebugWindowController
-  let tutorPanelCoordinator: TutorCoordinator
-  let tutorManualRuntimeController: TutorManualRuntimeController
   let debugLLMConfigurationStore: DebugLLMConfigurationStore
-  private let debugConfiguredTutorEngine: DebugConfiguredTutorEngine
   let realtimeVoiceCoordinator: DoubaoRealtimeVoiceCoordinator
   let realtimeVoiceSpikeWindowController: RealtimeVoiceSpikeWindowController
   private let realtimeVoiceLifecycleMonitor: RealtimeVoiceLifecycleMonitor
@@ -65,6 +69,28 @@ final class AppContainer {
       liveMonitor: accessibilityLiveMonitor
     )
     self.accessibilityDebugWindowController = accessibilityDebugWindowController
+    let llmProviderSettingsStore = LLMProviderSettingsStore()
+    self.llmProviderSettingsStore = llmProviderSettingsStore
+    let credentialStore = KeychainCredentialStore()
+    self.credentialStore = credentialStore
+    let tutorProviderFactory = TutorProviderFactory(
+      settingsStore: llmProviderSettingsStore,
+      credentialStore: credentialStore
+    )
+    self.tutorProviderFactory = tutorProviderFactory
+    let connectionTester = TutorProviderConnectionTester(
+      providerFactory: tutorProviderFactory
+    )
+    let aiModelSettingsController = AIModelSettingsController(
+      settingsStore: llmProviderSettingsStore,
+      credentialStore: credentialStore,
+      connectionTester: connectionTester
+    )
+    self.aiModelSettingsController = aiModelSettingsController
+    let aiModelSettingsWindowController = AIModelSettingsWindowController(
+      controller: aiModelSettingsController
+    )
+    self.aiModelSettingsWindowController = aiModelSettingsWindowController
 #if DEBUG
     let tutorCoordinator = TutorCoordinator(
       engine: LLMTutorEngine(provider: FakeLLMProvider())
@@ -106,41 +132,59 @@ final class AppContainer {
     activeApplicationMonitor.onApplicationTermination = { [weak accessibilityLiveMonitor] application in
       accessibilityLiveMonitor?.targetApplicationDidTerminate(application)
     }
-    let tutorPanelContentStore: TutorPanelContentStore
-    let tutorPanelActionHandler: TutorPanelActionHandler
-    let tutorPresentationRouter: TutorPresentationRouter
-#if DEBUG
-    tutorPanelContentStore = TutorPanelContentStore(availability: .available)
-    tutorPresentationRouter = TutorPresentationRouter(contentStore: tutorPanelContentStore)
-    let fixtureController = TutorPanelDebugFixtureController(
+    let initialTutorAvailability: TutorPanelActionAvailability = tutorProviderFactory.isAvailable()
+      ? .available
+      : .unavailable(message: "还没有配置教学模型。")
+    let tutorPanelContentStore = TutorPanelContentStore(
+      availability: initialTutorAvailability
+    )
+    let tutorPresentationRouter = TutorPresentationRouter(
       contentStore: tutorPanelContentStore
     )
     let currentContentProvider = CurrentExplainableContentProvider()
-    let debugConfiguredTutorEngine = DebugConfiguredTutorEngine()
-    self.debugConfiguredTutorEngine = debugConfiguredTutorEngine
-    let tutorPanelCoordinator = TutorCoordinator(engine: debugConfiguredTutorEngine)
+    let productionTutorEngine = ProductionTutorEngine(
+      providerFactory: tutorProviderFactory
+    )
+    let tutorPanelCoordinator = TutorCoordinator(engine: productionTutorEngine)
     self.tutorPanelCoordinator = tutorPanelCoordinator
     let tutorManualRuntimeController = TutorManualRuntimeController(
       contentProvider: currentContentProvider,
       coordinator: tutorPanelCoordinator,
       router: tutorPresentationRouter,
       contentStore: tutorPanelContentStore,
-      prepareEngine: { [weak debugLLMConfigurationStore] in
-        guard let configuration = debugLLMConfigurationStore?.validatedConfiguration() else {
-          return false
-        }
-        await debugConfiguredTutorEngine.configure(configuration)
-        return true
+      prepareEngine: { [weak tutorProviderFactory] in
+        tutorProviderFactory?.isAvailable() == true
       }
     )
     self.tutorManualRuntimeController = tutorManualRuntimeController
-    tutorPanelActionHandler = TutorPanelActionHandler { [fixtureController, weak tutorManualRuntimeController] intent in
+
+    let tutorPanelActionHandler: TutorPanelActionHandler
+#if DEBUG
+    let fixtureController = TutorPanelDebugFixtureController(
+      contentStore: tutorPanelContentStore
+    )
+    tutorPanelActionHandler = TutorPanelActionHandler {
+      [fixtureController, weak tutorManualRuntimeController, weak aiModelSettingsWindowController]
+      intent in
       if case .showDebugFixture = intent {
         fixtureController.handle(intent)
+      } else if case .openModelSettings = intent {
+        aiModelSettingsWindowController?.show()
       } else {
         tutorManualRuntimeController?.handle(intent)
       }
     }
+#else
+    tutorPanelActionHandler = TutorPanelActionHandler {
+      [weak tutorManualRuntimeController, weak aiModelSettingsWindowController]
+      intent in
+      if case .openModelSettings = intent {
+        aiModelSettingsWindowController?.show()
+      } else {
+        tutorManualRuntimeController?.handle(intent)
+      }
+    }
+#endif
     accessibilityLiveMonitor.onLiveSessionChange = { [weak tutorManualRuntimeController] sessionID in
       if let sessionID {
         tutorManualRuntimeController?.liveSessionDidStart(sessionID)
@@ -154,15 +198,14 @@ final class AppContainer {
       }
       tutorManualRuntimeController?.receive(chunk, sessionID: sessionID)
     }
-#else
-    tutorPanelContentStore = TutorPanelContentStore()
-    tutorPresentationRouter = TutorPresentationRouter(contentStore: tutorPanelContentStore)
-    tutorPanelActionHandler = TutorPanelActionHandler { [tutorPanelContentStore] intent in
-      if case .dismissCurrentPresentation = intent {
-        tutorPanelContentStore.clear()
-      }
+    aiModelSettingsController.onConfigurationDidChange = {
+      [weak tutorManualRuntimeController, weak tutorPanelContentStore, weak tutorProviderFactory] in
+      tutorManualRuntimeController?.providerConfigurationDidChange()
+      let availability: TutorPanelActionAvailability = tutorProviderFactory?.isAvailable() == true
+        ? .available
+        : .unavailable(message: "还没有配置教学模型。")
+      tutorPanelContentStore?.setAvailability(availability)
     }
-#endif
     self.tutorPanelContentStore = tutorPanelContentStore
     self.tutorPresentationRouter = tutorPresentationRouter
     let panelController = FloatingPanelController(
@@ -235,6 +278,7 @@ final class AppContainer {
       appState.shellStatus = .hotKeyUnavailable
     }
 
+    tutorPanelCoordinator.start()
 #if DEBUG
     tutorCoordinator.start()
     realtimeVoiceLifecycleMonitor.start()
@@ -247,10 +291,11 @@ final class AppContainer {
   }
 
   func stop() {
-#if DEBUG
     semanticBuffer.onChunk = nil
     accessibilityLiveMonitor.onLiveSessionChange = nil
     tutorManualRuntimeController.stop()
+    tutorPanelCoordinator.stop()
+#if DEBUG
     tutorCoordinator.stop()
     tutorDebugWindowController.stop()
     realtimeVoiceLifecycleMonitor.stop()
@@ -270,6 +315,7 @@ final class AppContainer {
     speechInputController.cancel()
     voiceController.stop()
     hotKeyManager.unregister()
+    aiModelSettingsWindowController.stop()
     voiceSettingsWindowController.stop()
     petLibraryWindowController.stop()
     petWindowController.stop()

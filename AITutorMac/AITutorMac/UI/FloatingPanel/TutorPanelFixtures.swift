@@ -201,6 +201,8 @@ final class TutorPanelDebugFixtureController {
       presentationTask?.cancel()
       presentationTask = nil
       contentStore.clear()
+    case .openModelSettings:
+      break
     case let .showDebugFixture(fixture):
       presentationTask?.cancel()
       presentationTask = nil

@@ -227,8 +227,12 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
     switch response.statusCode {
     case 200...299:
       return
-    case 401, 429:
-      throw LLMProviderError.unavailable
+    case 401, 403:
+      throw LLMProviderError.authenticationFailed
+    case 400, 404:
+      throw LLMProviderError.modelUnavailable
+    case 429:
+      throw LLMProviderError.rateLimited
     default:
       throw LLMProviderError.unavailable
     }
@@ -430,7 +434,9 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
          .internationalRoamingOff,
          .dataNotAllowed,
          .resourceUnavailable:
-      return .unavailable
+      return .networkUnavailable
+    case .badURL, .unsupportedURL:
+      return .invalidEndpoint
     default:
       return .unavailable
     }

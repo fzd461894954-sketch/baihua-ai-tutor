@@ -2,8 +2,8 @@
 import Foundation
 import Observation
 
-/// Process-memory-only Debug configuration shared by Real LLM Demo and the
-/// manually triggered Tutor Panel runtime. It is never persisted or logged.
+/// Process-memory-only configuration for Real LLM Demo. Production Tutor
+/// Runtime uses Preferences + Keychain and never reads this store.
 @MainActor
 @Observable
 final class DebugLLMConfigurationStore {
@@ -32,30 +32,6 @@ final class DebugLLMConfigurationStore {
 
   func clear() {
     configuration = DebugLLMConfiguration()
-  }
-}
-
-actor DebugConfiguredTutorEngine: TutorEngine {
-  private var configuration: DebugLLMConfiguration?
-
-  func configure(_ configuration: DebugLLMConfiguration) {
-    self.configuration = configuration
-  }
-
-  func respond(
-    to request: TutorRequest,
-    prompt: PromptPackage
-  ) async throws -> TutorResponse {
-    guard let configuration else {
-      throw TutorEngineError.unavailable
-    }
-    let provider: any LLMProvider
-    do {
-      provider = try tutorRealDemoLiveProvider(configuration)
-    } catch {
-      throw TutorEngineError.unavailable
-    }
-    return try await LLMTutorEngine(provider: provider).respond(to: request, prompt: prompt)
   }
 }
 #endif

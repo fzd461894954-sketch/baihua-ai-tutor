@@ -529,6 +529,13 @@ final class TutorRealDemoController {
         return .unavailable
       case .decodingFailed:
         return .invalidJSON
+      case .authenticationFailed,
+           .modelUnavailable,
+           .rateLimited,
+           .networkUnavailable:
+        return .unavailable
+      case .invalidEndpoint:
+        return .invalidEndpoint
       }
     }
     if let engineError = error as? TutorEngineError {

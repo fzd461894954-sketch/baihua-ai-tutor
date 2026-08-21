@@ -212,7 +212,7 @@ final class OpenAICompatibleProviderTests: XCTestCase {
     }
   }
 
-  func testUnauthorizedResponseIsUnavailable() async {
+  func testUnauthorizedResponseIsAuthenticationFailure() async {
     MockOpenAIURLProtocol.install { protocolInstance in
       protocolInstance.respond(
         statusCode: 401,
@@ -220,10 +220,10 @@ final class OpenAICompatibleProviderTests: XCTestCase {
       )
     }
 
-    await assertGenerateError(.unavailable, provider: makeProvider())
+    await assertGenerateError(.authenticationFailed, provider: makeProvider())
   }
 
-  func testRateLimitResponseIsUnavailable() async {
+  func testRateLimitResponseIsClassified() async {
     MockOpenAIURLProtocol.install { protocolInstance in
       protocolInstance.respond(
         statusCode: 429,
@@ -231,7 +231,18 @@ final class OpenAICompatibleProviderTests: XCTestCase {
       )
     }
 
-    await assertGenerateError(.unavailable, provider: makeProvider())
+    await assertGenerateError(.rateLimited, provider: makeProvider())
+  }
+
+  func testBadRequestIsClassifiedAsModelUnavailable() async {
+    MockOpenAIURLProtocol.install { protocolInstance in
+      protocolInstance.respond(
+        statusCode: 400,
+        chunks: [Data("{\"error\":{\"message\":\"invalid model\"}}".utf8)]
+      )
+    }
+
+    await assertGenerateError(.modelUnavailable, provider: makeProvider())
   }
 
   func testTimeoutMapsToProviderTimeout() async {
@@ -242,12 +253,12 @@ final class OpenAICompatibleProviderTests: XCTestCase {
     await assertGenerateError(.timeout, provider: makeProvider())
   }
 
-  func testNetworkUnavailableMapsToProviderUnavailable() async {
+  func testNetworkUnavailableIsClassified() async {
     MockOpenAIURLProtocol.install { protocolInstance in
       protocolInstance.fail(with: URLError(.notConnectedToInternet))
     }
 
-    await assertGenerateError(.unavailable, provider: makeProvider())
+    await assertGenerateError(.networkUnavailable, provider: makeProvider())
   }
 
   func testTaskCancellationStopsURLSessionTask() async {

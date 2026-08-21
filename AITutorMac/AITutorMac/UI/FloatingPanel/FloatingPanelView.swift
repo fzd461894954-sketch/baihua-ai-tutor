@@ -42,8 +42,13 @@ struct FloatingPanelView: View {
             .font(.footnote).foregroundStyle(.secondary).textSelection(.enabled)
         }
       }
-      Button("解释当前内容") { actionHandler.handle(.explainCurrentContent) }
-        .buttonStyle(.borderedProminent).disabled(!availability.isAvailable)
+      if availability.isAvailable {
+        Button("解释当前内容") { actionHandler.handle(.explainCurrentContent) }
+          .buttonStyle(.borderedProminent)
+      } else {
+        Button("打开 AI 模型设置") { actionHandler.handle(.openModelSettings) }
+          .buttonStyle(.borderedProminent)
+      }
       if availability.isAvailable {
         Label("解释内容会发送给当前配置的 AI 模型服务。", systemImage: "lock.shield")
           .font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
@@ -102,8 +107,14 @@ struct FloatingPanelView: View {
         icon: { Image(systemName: "exclamationmark.triangle").foregroundStyle(.red) }
       Text(error.message).foregroundStyle(.secondary).textSelection(.enabled)
       HStack(spacing: 10) {
-        Button("重新解释") { actionHandler.handle(.retryCurrentContent) }
-          .buttonStyle(.borderedProminent)
+        switch error.recoveryAction {
+        case .retry:
+          Button("重新解释") { actionHandler.handle(.retryCurrentContent) }
+            .buttonStyle(.borderedProminent)
+        case .openModelSettings:
+          Button("打开 AI 模型设置") { actionHandler.handle(.openModelSettings) }
+            .buttonStyle(.borderedProminent)
+        }
         Button("稍后再说") { actionHandler.handle(.dismissCurrentPresentation) }
       }
     }

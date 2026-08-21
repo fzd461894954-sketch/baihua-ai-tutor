@@ -28,7 +28,8 @@ struct TutorPanelErrorPresentation: Equatable, Sendable {
 
   static let modelNotConfigured = TutorPanelErrorPresentation(
     title: "还没有配置教学模型",
-    message: "请先在 Tutor Debug 的 Real LLM Demo 中配置模型服务。"
+    message: "请先在 AI 模型设置中配置模型服务。",
+    recoveryAction: .openModelSettings
   )
 
   static let requestFailed = TutorPanelErrorPresentation(
@@ -38,16 +39,27 @@ struct TutorPanelErrorPresentation: Equatable, Sendable {
 
   let title: String
   let message: String
+  let recoveryAction: TutorPanelErrorRecoveryAction
 
-  init(title: String, message: String) {
+  init(
+    title: String,
+    message: String,
+    recoveryAction: TutorPanelErrorRecoveryAction = .retry
+  ) {
     self.title = Self.visibleText(title) ?? "这次解释没有成功"
     self.message = Self.visibleText(message) ?? "可以再试一次。"
+    self.recoveryAction = recoveryAction
   }
 
   private static func visibleText(_ value: String) -> String? {
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
     return trimmed.isEmpty ? nil : trimmed
   }
+}
+
+enum TutorPanelErrorRecoveryAction: Equatable, Sendable {
+  case retry
+  case openModelSettings
 }
 
 enum TutorPanelState: Equatable, Sendable {
@@ -64,7 +76,7 @@ enum TutorPanelState: Equatable, Sendable {
 final class TutorPanelContentStore {
   private(set) var state: TutorPanelState
 
-  private let emptyAvailability: TutorPanelActionAvailability
+  private var emptyAvailability: TutorPanelActionAvailability
 
   init(
     availability: TutorPanelActionAvailability = .unavailable(
@@ -77,6 +89,13 @@ final class TutorPanelContentStore {
 
   func setLoading() {
     state = .loading
+  }
+
+  func setAvailability(_ availability: TutorPanelActionAvailability) {
+    emptyAvailability = availability
+    if case .empty = state {
+      state = .empty(availability: availability)
+    }
   }
 
   func present(_ presentation: TutorPresentationModel) {

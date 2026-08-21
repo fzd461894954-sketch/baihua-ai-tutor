@@ -15,6 +15,7 @@ struct AITutorApp: App {
         showPet: appDelegate.showPet,
         hidePet: appDelegate.hidePet,
         showPetLibrary: appDelegate.showPetLibrary,
+        showModelSettings: appDelegate.showModelSettings,
         showVoiceSettings: appDelegate.showVoiceSettings,
         showAccessibilityDebug: appDelegate.showAccessibilityDebug,
         showTutorDebug: appDelegate.showTutorDebug,
@@ -44,5 +45,12 @@ struct AITutorApp: App {
       }
     }
 #endif
+
+    Settings {
+      AIModelSettingsView(controller: appDelegate.aiModelSettingsController)
+        .onAppear {
+          appDelegate.aiModelSettingsController.reload()
+        }
+    }
   }
 }

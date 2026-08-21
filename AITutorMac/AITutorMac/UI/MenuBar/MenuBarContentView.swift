@@ -10,6 +10,7 @@ struct MenuBarContentView: View {
   let showPet: () -> Void
   let hidePet: () -> Void
   let showPetLibrary: () -> Void
+  let showModelSettings: () -> Void
   let showVoiceSettings: () -> Void
   let showAccessibilityDebug: () -> Void
   let showTutorDebug: () -> Void
@@ -42,6 +43,7 @@ struct MenuBarContentView: View {
     Divider()
 
     Button("我的桌面老师…", action: showPetLibrary)
+    Button("设置…", action: showModelSettings)
     Button("语音设置…", action: showVoiceSettings)
 
     if speechInputController.isMicrophoneActive {

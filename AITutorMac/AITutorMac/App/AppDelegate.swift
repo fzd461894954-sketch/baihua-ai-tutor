@@ -31,6 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     container.accessibilitySnapshotController
   }
 
+  var aiModelSettingsController: AIModelSettingsController {
+    container.aiModelSettingsController
+  }
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApplication.shared.setActivationPolicy(.accessory)
     ProcessInfo.processInfo.disableAutomaticTermination(
@@ -98,6 +102,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc func showVoiceSettings() {
     container.voiceSettingsWindowController.show()
+  }
+
+  @objc func showModelSettings() {
+    container.aiModelSettingsWindowController.show()
   }
 
   @objc func showAccessibilityDebug() {
