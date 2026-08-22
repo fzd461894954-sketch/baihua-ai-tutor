@@ -46,6 +46,22 @@ request. A Tutor request contains the current stable SemanticChunk required for
 the lesson. The app does not automatically upload a full screen or complete
 Accessibility snapshot.
 
+## Permissions
+
+- Accessibility is requested only after the user chooses the menu action and is
+  used only for the explicitly started single-target Live Watch.
+- Microphone and speech recognition are requested only after Push-to-Talk is
+  actively used.
+- V0.1 does not request Screen Recording, Camera, Photos, or Full Disk Access.
+- TTS, Pet state, custom-Pet storage, and ordinary UI appearance remain local.
+
+## Internal beta distribution
+
+The V0.1 test artifact is not an external release unless it is signed with a
+valid Developer ID, notarized, stapled, and verified. An ad-hoc signature is
+acceptable only for a clearly labeled internal QA build; it must not be
+described as a notarized or broadly distributable macOS release.
+
 ## Development credentials
 
 Tests use values such as `test-api-key` and Mock URLProtocol. Real credentials

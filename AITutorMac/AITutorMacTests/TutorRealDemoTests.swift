@@ -61,6 +61,8 @@ final class TutorRealDemoTests: XCTestCase {
     )
     let controller = TutorStreamModelBenchmarkController(providerFactory: providerFactory)
     controller.selectedMode = .streaming
+    controller.responseFormat = .jsonObject
+    controller.maxOutputTokens = TutorResponseBudget.compactLesson.maximumOutputTokens
     controller.candidateModelsText =
       ProcessInfo.processInfo.environment["TUTOR_PERF02_CANDIDATE_MODEL"] ?? ""
 
@@ -73,7 +75,7 @@ final class TutorRealDemoTests: XCTestCase {
     let expectedModelCount = controller.candidateModelsText.isEmpty ? 1 : 2
     XCTAssertEqual(
       controller.records.count,
-      TutorEvaluationDataset.cases.count * 2 * expectedModelCount
+      TutorEvaluationDataset.cases.count * expectedModelCount
     )
     for record in controller.records {
       let metrics = record.metrics
@@ -92,6 +94,47 @@ final class TutorRealDemoTests: XCTestCase {
           + "missing_structure=\(signals?.missingStructure.rawValue ?? "unavailable") "
           + "verbosity=\(signals?.verbosity.rawValue ?? "unavailable") "
           + "source_alignment=\(signals?.sourceAlignment.rawValue ?? "unavailable")"
+      )
+    }
+  }
+
+  func testLiveStreamModelFiveRunComparisonFromSavedSettingsWhenExplicitlyEnabled() async throws {
+    guard ProcessInfo.processInfo.environment["TUTOR_PERF02_USE_KEYCHAIN"] == "1" else {
+      throw XCTSkip("TUTOR_PERF02_USE_KEYCHAIN is intentionally absent")
+    }
+
+    let providerFactory = TutorProviderFactory(
+      settingsStore: LLMProviderSettingsStore(),
+      credentialStore: KeychainCredentialStore()
+    )
+    let controller = TutorStreamModelBenchmarkController(providerFactory: providerFactory)
+    controller.selectedCaseID = "api"
+    controller.selectedMode = .streaming
+    controller.responseFormat = .jsonObject
+    controller.maxOutputTokens = TutorResponseBudget.compactLesson.maximumOutputTokens
+    controller.candidateModelsText =
+      ProcessInfo.processInfo.environment["TUTOR_PERF02_CANDIDATE_MODEL"] ?? ""
+
+    controller.runModelComparison()
+    await waitForStreamModelBenchmarkTerminalState(
+      controller,
+      timeoutNanoseconds: 900_000_000_000
+    )
+
+    XCTAssertEqual(controller.records.count, TutorStreamModelBenchmarkController.defaultRunCount * 2)
+    for record in controller.records {
+      let metrics = record.metrics
+      print(
+        "PERF02_MODEL run=\(record.runNumber) model=\(record.model) "
+          + "format=\(record.responseFormat.rawValue) mode=\(record.mode.rawValue) "
+          + "ttfb_ms=\(milliseconds(metrics.timeToFirstByte)) "
+          + "first_event_ms=\(milliseconds(metrics.timeToFirstSSEEvent)) "
+          + "first_content_ms=\(milliseconds(metrics.timeToFirstModelContent)) "
+          + "full_ms=\(milliseconds(metrics.totalTutorLatency)) "
+          + "input_tokens=\(metrics.inputTokens.map(String.init) ?? "unavailable") "
+          + "output_tokens=\(metrics.outputTokens.map(String.init) ?? "unavailable") "
+          + "quality=\(record.qualityRating?.rawValue ?? "failed") "
+          + "success=\(record.succeeded)"
       )
     }
   }
@@ -389,20 +432,21 @@ final class TutorRealDemoTests: XCTestCase {
     XCTAssertEqual(try? factory.configurationSnapshot().model, "benchmark-model")
   }
 
-  func testStreamModelQualityMatrixRunsAllCasesAndBothFormats() async {
+  func testStreamModelQualityMatrixRunsAllCasesForSelectedFormat() async {
     let provider = FakeLLMProvider(behavior: .success)
     let controller = TutorStreamModelBenchmarkController(
       providerFactory: BenchmarkProviderFactoryStub(provider: provider),
       providerBuilder: { _ in provider }
     )
     controller.selectedMode = .streaming
+    controller.responseFormat = .jsonObject
 
     controller.runQualityMatrix()
     await waitForStreamModelBenchmarkTerminalState(controller)
 
     XCTAssertEqual(controller.state, .completed)
-    XCTAssertEqual(controller.records.count, TutorEvaluationDataset.cases.count * 2)
-    XCTAssertEqual(Set(controller.records.map(\.responseFormat)), [.jsonObject, .jsonSchema])
+    XCTAssertEqual(controller.records.count, TutorEvaluationDataset.cases.count)
+    XCTAssertEqual(Set(controller.records.map(\.responseFormat)), [.jsonObject])
     XCTAssertTrue(controller.records.allSatisfy { $0.qualitySignals != nil })
     XCTAssertTrue(controller.records.allSatisfy(\.succeeded))
   }

@@ -10,6 +10,7 @@ Build/
 *.xcarchive
 *.profraw
 *.profdata
+artifacts/
 
 # Local configuration, credentials, and signing material
 .env

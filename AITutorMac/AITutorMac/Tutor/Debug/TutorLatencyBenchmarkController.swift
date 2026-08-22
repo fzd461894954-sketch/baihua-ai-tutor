@@ -587,11 +587,9 @@ final class TutorStreamModelBenchmarkController {
   func runQualityMatrix() {
     start { base in
       let models = self.candidateModels(base: base)
-      let configurations = models.flatMap { model in
-        [
-          Configuration(model: model, responseFormat: .jsonObject, mode: self.selectedMode),
-          Configuration(model: model, responseFormat: .jsonSchema, mode: self.selectedMode),
-        ]
+      let format = self.effectiveFormat(base: base)
+      let configurations = models.map { model in
+        Configuration(model: model, responseFormat: format, mode: self.selectedMode)
       }
       return TutorEvaluationDataset.cases.map {
         WorkItem(evaluationCase: $0, configurations: configurations)

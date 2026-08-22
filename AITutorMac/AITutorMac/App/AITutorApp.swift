@@ -10,6 +10,7 @@ struct AITutorApp: App {
         appState: appDelegate.appState,
         contextState: appDelegate.contextState,
         accessibilitySnapshotController: appDelegate.accessibilitySnapshotController,
+        accessibilityLiveMonitor: appDelegate.accessibilityLiveMonitor,
         onIntent: { intent in
           switch intent {
           case .togglePanel:

@@ -31,6 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     container.accessibilitySnapshotController
   }
 
+  var accessibilityLiveMonitor: AccessibilityLiveMonitor {
+    container.accessibilityLiveMonitor
+  }
+
   var aiModelSettingsController: AIModelSettingsController {
     container.aiModelSettingsController
   }

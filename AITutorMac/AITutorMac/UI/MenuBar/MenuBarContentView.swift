@@ -34,6 +34,7 @@ struct MenuBarContentView: View {
   let appState: AppState
   let contextState: ContextState
   let accessibilitySnapshotController: AccessibilitySnapshotController
+  let accessibilityLiveMonitor: AccessibilityLiveMonitor
   let onIntent: (MenuBarIntent) -> Void
   let showAccessibilityDebug: () -> Void
   let showTutorDebug: () -> Void
@@ -47,6 +48,25 @@ struct MenuBarContentView: View {
   var body: some View {
     Text("白话 AI")
     Text("当前应用：\(contextState.userContextApplication?.displayName ?? "未检测到")")
+
+    if accessibilitySnapshotController.authorizationController.permissionState == .granted {
+      Text("内容跟随：\(accessibilityLiveMonitor.state.displayName)")
+      Button("开始跟随当前应用") {
+        accessibilityLiveMonitor.start()
+      }
+      .disabled(accessibilityLiveMonitor.isLiveSessionActive)
+      Button("停止跟随") {
+        accessibilityLiveMonitor.stop()
+      }
+      .disabled(!accessibilityLiveMonitor.isLiveSessionActive)
+    } else {
+      Button("请求辅助功能权限…") {
+        let authorization = accessibilitySnapshotController.authorizationController
+        authorization.beginPermissionRequest()
+        authorization.continuePermissionRequest()
+        authorization.openSystemSettings()
+      }
+    }
 
     Divider()
 
