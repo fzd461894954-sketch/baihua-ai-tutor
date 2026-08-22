@@ -15,6 +15,7 @@ enum TutorManualRuntimeState: String, Equatable, Sendable {
 final class TutorManualRuntimeController {
   private(set) var state: TutorManualRuntimeState = .idle
   private(set) var activeSessionID: UUID?
+  private(set) var latestLatencyMetrics: TutorLatencyMetrics?
 
   @ObservationIgnored private let contentProvider: CurrentExplainableContentProvider
   @ObservationIgnored private let coordinator: TutorCoordinator
@@ -24,6 +25,7 @@ final class TutorManualRuntimeController {
   @ObservationIgnored private var actionTask: Task<Void, Never>?
   @ObservationIgnored private var actionGeneration = 0
   @ObservationIgnored private var requestedChunkID: UUID?
+  @ObservationIgnored private var activeLatencyTrace: TutorLatencyTrace?
 
   init(
     contentProvider: CurrentExplainableContentProvider,
@@ -43,6 +45,12 @@ final class TutorManualRuntimeController {
         return
       }
       if self.router.route(presentation, origin: .userInitiated) {
+        self.coordinator.markPanelPresented(
+          responseID: presentation.responseMetadata.responseID
+        )
+        self.latestLatencyMetrics = self.coordinator.latestLatencyMetrics
+        self.logCompletedLatency()
+        self.activeLatencyTrace = nil
         self.requestedChunkID = nil
         self.state = .completed
       }
@@ -52,6 +60,8 @@ final class TutorManualRuntimeController {
         return
       }
       self.router.routeError(.requestFailed, origin: .userInitiated)
+      self.latestLatencyMetrics = self.coordinator.latestLatencyMetrics
+      self.activeLatencyTrace = nil
       self.requestedChunkID = nil
       self.state = .failed
     }
@@ -145,6 +155,9 @@ final class TutorManualRuntimeController {
   }
 
   private func explainCurrentContent() {
+    let latencyTrace = TutorLatencyTrace()
+    activeLatencyTrace = latencyTrace
+    latestLatencyMetrics = nil
     let sessionDescription = activeSessionID?.uuidString ?? "none"
     AppLogger.tutorRuntime.info(
       "Manual explain requested session=\(sessionDescription, privacy: .public) providerAvailable=\(self.contentProvider.hasStableContent, privacy: .public)"
@@ -162,12 +175,15 @@ final class TutorManualRuntimeController {
       }
       do {
         let chunk = try self.contentProvider.currentSemanticChunk()
+        latencyTrace.markContentResolved()
         self.requestedChunkID = chunk.id
         guard await self.prepareEngine() else {
           guard self.owns(generation: generation, sessionID: sessionID) else {
             return
           }
           self.router.routeError(.modelNotConfigured, origin: .userInitiated)
+          self.latestLatencyMetrics = latencyTrace.snapshot
+          self.activeLatencyTrace = nil
           self.requestedChunkID = nil
           self.state = .failed
           self.actionTask = nil
@@ -177,13 +193,18 @@ final class TutorManualRuntimeController {
           return
         }
         self.actionTask = nil
-        self.coordinator.requestExplanation(for: chunk)
+        self.coordinator.requestExplanation(
+          for: chunk,
+          latencyTrace: latencyTrace
+        )
       } catch {
         guard self.owns(generation: generation, sessionID: sessionID) else {
           return
         }
         self.actionTask = nil
         self.router.routeError(.noStableContent, origin: .userInitiated)
+        self.latestLatencyMetrics = latencyTrace.snapshot
+        self.activeLatencyTrace = nil
         self.requestedChunkID = nil
         self.state = .failed
       }
@@ -195,6 +216,10 @@ final class TutorManualRuntimeController {
     actionTask?.cancel()
     actionTask = nil
     coordinator.cancelCurrentRequest()
+    if let activeLatencyTrace {
+      latestLatencyMetrics = activeLatencyTrace.snapshot
+    }
+    activeLatencyTrace = nil
     requestedChunkID = nil
   }
 
@@ -202,6 +227,24 @@ final class TutorManualRuntimeController {
     !Task.isCancelled
       && generation == actionGeneration
       && activeSessionID == sessionID
+  }
+
+  private func logCompletedLatency() {
+    guard let metrics = latestLatencyMetrics else {
+      return
+    }
+    let total = Self.milliseconds(metrics.totalTutorLatency)
+    let ttfb = Self.milliseconds(metrics.timeToFirstByte)
+    let generation = Self.milliseconds(metrics.generationDuration)
+    let inputTokens = metrics.inputTokens.map(String.init) ?? "unavailable"
+    let outputTokens = metrics.outputTokens.map(String.init) ?? "unavailable"
+    AppLogger.tutorRuntime.info(
+      "Tutor latency completed trace=\(metrics.traceID.uuidString, privacy: .public) total_ms=\(total, privacy: .public) ttfb_ms=\(ttfb, privacy: .public) generation_ms=\(generation, privacy: .public) input_tokens=\(inputTokens, privacy: .public) output_tokens=\(outputTokens, privacy: .public)"
+    )
+  }
+
+  private static func milliseconds(_ duration: TimeInterval?) -> String {
+    duration.map { String(Int(($0 * 1_000).rounded())) } ?? "unavailable"
   }
 
 #if DEBUG

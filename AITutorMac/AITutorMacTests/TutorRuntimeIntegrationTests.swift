@@ -148,6 +148,18 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     }
     XCTAssertEqual(runtime.coordinator.latestRequest?.trigger, .userInitiated)
     XCTAssertEqual(runtime.controller.state, .completed)
+    let metrics = runtime.controller.latestLatencyMetrics
+    XCTAssertNotNil(metrics?.contentResolvedAt)
+    XCTAssertNotNil(metrics?.requestCreatedAt)
+    XCTAssertNotNil(metrics?.promptBuiltAt)
+    XCTAssertNotNil(metrics?.httpStartedAt)
+    XCTAssertNotNil(metrics?.networkCompletedAt)
+    XCTAssertNotNil(metrics?.decodedAt)
+    XCTAssertNotNil(metrics?.validatedAt)
+    XCTAssertNotNil(metrics?.presentationReadyAt)
+    XCTAssertNotNil(metrics?.panelPresentedAt)
+    XCTAssertNotNil(metrics?.totalTutorLatency)
+    XCTAssertNil(metrics?.firstSSEContentAt)
   }
 
   func testPanelDismissAndPresentationUpdateDoNotClearCurrentContent() throws {

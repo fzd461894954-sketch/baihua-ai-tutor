@@ -21,6 +21,7 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
   private let sessionConfiguration: URLSessionConfiguration
   private let session: URLSession
   private let taskRegistry = OpenAICompatibleTaskRegistry()
+  private let metricsObserver: OpenAICompatibleURLSessionMetricsObserver
 
   init(
     endpoint: URL,
@@ -44,7 +45,13 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
     configuration.timeoutIntervalForRequest = requestTimeout
     configuration.timeoutIntervalForResource = requestTimeout
     self.sessionConfiguration = configuration
-    session = URLSession(configuration: configuration)
+    let metricsObserver = OpenAICompatibleURLSessionMetricsObserver()
+    self.metricsObserver = metricsObserver
+    session = URLSession(
+      configuration: configuration,
+      delegate: metricsObserver,
+      delegateQueue: nil
+    )
   }
 
   deinit {
@@ -53,11 +60,24 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
   }
 
   func generate(from prompt: PromptPackage) async throws -> RawLLMResponse {
+    try await generate(from: prompt, latencyTrace: nil)
+  }
+
+  func generate(
+    from prompt: PromptPackage,
+    latencyTrace: TutorLatencyTrace?
+  ) async throws -> RawLLMResponse {
     do {
       let request = try makeRequest(from: prompt, stream: false)
-      let (data, response) = try await perform(request)
+      let (data, response) = try await perform(
+        request,
+        latencyTrace: latencyTrace
+      )
       try Self.validate(response)
-      return try Self.decodeResponse(data, fallbackModel: model)
+      let decoded = try Self.decodeResponse(data, fallbackModel: model)
+      latencyTrace?.recordUsage(decoded.usage)
+      latencyTrace?.recordModelIdentifier(decoded.providerMetadata.modelIdentifier)
+      return decoded
     } catch {
       throw Self.normalized(error)
     }
@@ -65,6 +85,13 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
 
   func stream(
     from prompt: PromptPackage
+  ) async -> AsyncThrowingStream<RawLLMStreamChunk, Error> {
+    await stream(from: prompt, latencyTrace: nil)
+  }
+
+  func stream(
+    from prompt: PromptPackage,
+    latencyTrace: TutorLatencyTrace?
   ) async -> AsyncThrowingStream<RawLLMStreamChunk, Error> {
     let request: URLRequest
     do {
@@ -80,7 +107,8 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
     let delegate = OpenAICompatibleSSEDelegate(
       continuation: continuation,
       fallbackModel: model,
-      taskRegistry: taskRegistry
+      taskRegistry: taskRegistry,
+      latencyTrace: latencyTrace
     )
     let configuration = sessionConfiguration.copy() as! URLSessionConfiguration
     let delegateQueue = OperationQueue()
@@ -101,6 +129,7 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
       }
       delegate.cancel()
     }
+    latencyTrace?.markHTTPStarted()
     task.resume()
     return stream
   }
@@ -192,7 +221,8 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
   }
 
   private func perform(
-    _ request: URLRequest
+    _ request: URLRequest,
+    latencyTrace: TutorLatencyTrace?
   ) async throws -> (Data, HTTPURLResponse) {
     let cancellation = OpenAICompatibleCancellationBox()
 
@@ -203,6 +233,9 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
         let task = session.dataTask(with: request) {
           [taskRegistry] data, response, error in
           taskRegistry.remove(token: token)
+
+          latencyTrace?.markFirstResponseByte()
+          latencyTrace?.markNetworkCompleted()
 
           if let error {
             continuation.resume(throwing: Self.normalized(error))
@@ -215,7 +248,9 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
           continuation.resume(returning: (data ?? Data(), response))
         }
         taskRegistry.insert(task, token: token)
+        metricsObserver.attach(latencyTrace, to: task)
         cancellation.set(task)
+        latencyTrace?.markHTTPStarted()
         task.resume()
       }
     } onCancel: {
@@ -534,6 +569,7 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
   private let continuation: AsyncThrowingStream<RawLLMStreamChunk, Error>.Continuation
   private let fallbackModel: String
   private let taskRegistry: OpenAICompatibleTaskRegistry
+  private let latencyTrace: TutorLatencyTrace?
   private let finishLock = NSLock()
 
   private var session: URLSession?
@@ -547,11 +583,13 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
   init(
     continuation: AsyncThrowingStream<RawLLMStreamChunk, Error>.Continuation,
     fallbackModel: String,
-    taskRegistry: OpenAICompatibleTaskRegistry
+    taskRegistry: OpenAICompatibleTaskRegistry,
+    latencyTrace: TutorLatencyTrace?
   ) {
     self.continuation = continuation
     self.fallbackModel = fallbackModel
     self.taskRegistry = taskRegistry
+    self.latencyTrace = latencyTrace
   }
 
   func attach(session: URLSession) {
@@ -594,6 +632,7 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
     guard !finished else {
       return
     }
+    latencyTrace?.markFirstResponseByte()
     lineBuffer.append(data)
     do {
       try consumeCompleteLines(task: dataTask)
@@ -715,6 +754,15 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
       fallbackModel: fallbackModel,
       sequence: nextSequence
     ) {
+      if !chunk.contentDelta.isEmpty {
+        latencyTrace?.markFirstSSEContent()
+      }
+      if let usage = chunk.usage {
+        latencyTrace?.recordUsage(usage)
+      }
+      latencyTrace?.recordModelIdentifier(
+        chunk.providerMetadata.modelIdentifier
+      )
       continuation.yield(chunk)
       nextSequence += 1
     }
@@ -725,6 +773,7 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
       return
     }
     taskRegistry.remove(task)
+    latencyTrace?.markNetworkCompleted()
     continuation.finish()
     task.cancel()
     session?.invalidateAndCancel()
@@ -736,6 +785,7 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
       return
     }
     taskRegistry.remove(task)
+    latencyTrace?.markNetworkCompleted()
     continuation.finish(throwing: error)
     task.cancel()
     session?.invalidateAndCancel()
@@ -750,6 +800,39 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
     }
     isFinished = true
     return true
+  }
+}
+
+private final class OpenAICompatibleURLSessionMetricsObserver: NSObject,
+  URLSessionTaskDelegate,
+  @unchecked Sendable
+{
+  private let lock = NSLock()
+  private var traces: [Int: TutorLatencyTrace] = [:]
+
+  func attach(_ trace: TutorLatencyTrace?, to task: URLSessionTask) {
+    guard let trace else {
+      return
+    }
+    lock.lock()
+    traces[task.taskIdentifier] = trace
+    lock.unlock()
+  }
+
+  func urlSession(
+    _ session: URLSession,
+    task: URLSessionTask,
+    didFinishCollecting metrics: URLSessionTaskMetrics
+  ) {
+    lock.lock()
+    let trace = traces.removeValue(forKey: task.taskIdentifier)
+    lock.unlock()
+    let responseStartedAt = metrics.transactionMetrics
+      .compactMap(\.responseStartDate)
+      .min()
+    if let responseStartedAt {
+      trace?.markFirstResponseByte(at: responseStartedAt)
+    }
   }
 }
 

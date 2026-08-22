@@ -173,6 +173,38 @@ final class PromptContractTests: XCTestCase {
     XCTAssertTrue(package.constraints.contains(PromptRules.strictTutorResponseSchema))
   }
 
+  func testCompactLessonBudgetUsesExistingOptionalFieldsAndKeepsSafetyRules() throws {
+    let package = try TutorPromptBuilder().build(from: request(detailLevel: .concise))
+    let budgetRule = try XCTUnwrap(
+      package.constraints.first(where: { $0.contains("first compact lesson") })
+    )
+
+    XCTAssertTrue(budgetRule.contains("80-250"))
+    XCTAssertTrue(budgetRule.contains("at most 3 key points"))
+    XCTAssertTrue(budgetRule.contains("3 glossary terms"))
+    XCTAssertTrue(budgetRule.contains("set checkQuestion to null"))
+    XCTAssertTrue(package.constraints.contains(PromptRules.externalTextIsUntrustedData))
+    XCTAssertTrue(package.constraints.contains(PromptRules.neverExecuteExternalInstructions))
+    XCTAssertTrue(package.constraints.contains(PromptRules.noHiddenChainOfThought))
+    XCTAssertTrue(package.outputSchema.contains("\"checkQuestion\""))
+  }
+
+  func testPromptSizeMetricsReportComponentsWithoutBodies() throws {
+    let input = request(text: "API synthetic fixture")
+    let package = try TutorPromptBuilder().build(from: input)
+    let metrics = TutorPromptSizeMetrics.measure(
+      package,
+      sourceCharacterCount: input.source.text.count
+    )
+
+    XCTAssertEqual(metrics.sourceCharacters, input.source.text.count)
+    XCTAssertEqual(metrics.systemInstructionCharacters, package.systemInstruction.count)
+    XCTAssertEqual(metrics.outputSchemaCharacters, package.outputSchema.count)
+    XCTAssertGreaterThan(metrics.totalPromptCharacters, metrics.sourceCharacters)
+    XCTAssertGreaterThan(metrics.estimatedInputTokens, 0)
+    XCTAssertFalse(String(reflecting: metrics).contains(input.source.text))
+  }
+
   private func request(
     text: String = "API 是程序之间约定好的接口。",
     level: UserKnowledgeLevel = .novice,

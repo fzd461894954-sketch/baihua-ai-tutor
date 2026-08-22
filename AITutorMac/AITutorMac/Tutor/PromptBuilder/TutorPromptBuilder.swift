@@ -2,9 +2,14 @@ import Foundation
 
 struct TutorPromptBuilder: Sendable {
   private let responseLimits: TutorResponseValidationLimits
+  private let responseBudget: TutorResponseBudget
 
-  init(responseLimits: TutorResponseValidationLimits = .default) {
+  init(
+    responseLimits: TutorResponseValidationLimits = .default,
+    responseBudget: TutorResponseBudget = .compactLesson
+  ) {
     self.responseLimits = responseLimits
+    self.responseBudget = responseBudget
   }
 
   func build(from request: TutorRequest) throws -> PromptPackage {
@@ -14,7 +19,9 @@ struct TutorPromptBuilder: Sendable {
       systemInstruction: systemInstruction,
       userContent: try userContent(for: request),
       outputSchema: try outputSchema(for: request),
-      constraints: PromptRules.constraints(for: request)
+      constraints: PromptRules.constraints(for: request) + [
+        responseBudget.promptConstraint
+      ]
     )
   }
 

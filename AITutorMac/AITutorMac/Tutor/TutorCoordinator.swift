@@ -82,6 +82,7 @@ final class TutorCoordinator {
   private(set) var receivedChunkCount = 0
   private(set) var duplicateChunkCount = 0
   private(set) var requestCount = 0
+  private(set) var latestLatencyMetrics: TutorLatencyMetrics?
   let displayQueue: TutorDisplayQueue
 
   var isSessionActive: Bool {
@@ -104,6 +105,7 @@ final class TutorCoordinator {
   @ObservationIgnored private var seenChunkIDs: Set<UUID> = []
   @ObservationIgnored private var seenChunkOrder: [UUID] = []
   @ObservationIgnored private var activeTask: Task<Void, Never>?
+  @ObservationIgnored private var latestLatencyTrace: TutorLatencyTrace?
   @ObservationIgnored var onPresentationReady: (@MainActor (TutorPresentationModel, TutorTrigger) -> Void)?
   @ObservationIgnored var onRequestFailure: (@MainActor (TutorEngineError) -> Void)?
 
@@ -205,7 +207,10 @@ final class TutorCoordinator {
 
   /// Explicit user action. It intentionally bypasses automatic low-confidence
   /// admission and duplicate suppression while retaining session ownership.
-  func requestExplanation(for chunk: SemanticChunk) {
+  func requestExplanation(
+    for chunk: SemanticChunk,
+    latencyTrace: TutorLatencyTrace? = nil
+  ) {
     guard let sessionID = currentSessionID else {
       latestChunkAdmission = .skipped(.inactiveSession)
       return
@@ -217,16 +222,26 @@ final class TutorCoordinator {
       return
     }
     latestChunkAdmission = .accepted(.userInitiated)
-    beginRequest(for: chunk, trigger: .userInitiated, sessionID: sessionID)
+    beginRequest(
+      for: chunk,
+      trigger: .userInitiated,
+      sessionID: sessionID,
+      latencyTrace: latencyTrace
+    )
   }
 
   private func beginRequest(
     for chunk: SemanticChunk,
     trigger: TutorTrigger,
-    sessionID: UUID
+    sessionID: UUID,
+    latencyTrace suppliedTrace: TutorLatencyTrace? = nil
   ) {
     cancelActiveTask()
     nextSequence += 1
+    let latencyTrace = suppliedTrace ?? TutorLatencyTrace(
+      userActionAt: now(),
+      now: now
+    )
 
     let request: TutorRequest
     let promptPackage: PromptPackage
@@ -239,7 +254,12 @@ final class TutorCoordinator {
         trigger: trigger,
         output: output
       )
+      latencyTrace.markRequestCreated(requestID: request.id)
       promptPackage = try promptBuilder.build(from: request)
+      latencyTrace.markPromptBuilt(
+        promptPackage,
+        sourceCharacterCount: request.source.text.count
+      )
     } catch {
       let tutorError = Self.tutorError(from: error)
       latestRequest = nil
@@ -249,6 +269,8 @@ final class TutorCoordinator {
       latestInteractionInput = nil
       latestInteractionDecision = nil
       activeExecutionContext = nil
+      latestLatencyTrace = latencyTrace
+      latestLatencyMetrics = latencyTrace.snapshot
       requestState = .failed(requestID: nil, error: tutorError)
       providerState = .idle
       lastError = tutorError
@@ -270,6 +292,8 @@ final class TutorCoordinator {
     latestInteractionInput = nil
     latestInteractionDecision = nil
     activeExecutionContext = context
+    latestLatencyTrace = latencyTrace
+    latestLatencyMetrics = latencyTrace.snapshot
     requestState = .running(requestID: request.id, sequence: request.sequence)
     providerState = .running(requestID: request.id)
     lastError = nil
@@ -279,9 +303,15 @@ final class TutorCoordinator {
     activeTask = Task { @MainActor
       [weak self, engine, responseValidator, presentationMapper] in
       do {
-        let response = try await engine.respond(to: request, prompt: promptPackage)
+        let response = try await engine.respond(
+          to: request,
+          prompt: promptPackage,
+          latencyTrace: latencyTrace
+        )
         let validated = try responseValidator.validate(response, for: request)
+        latencyTrace.markValidated()
         let presentation = presentationMapper.makePresentation(from: validated)
+        latencyTrace.markPresentationReady()
         self?.complete(
           validated,
           presentation: presentation,
@@ -313,6 +343,8 @@ final class TutorCoordinator {
     requestState = .idle
     providerState = .idle
     activeExecutionContext = nil
+    latestLatencyTrace = nil
+    latestLatencyMetrics = nil
     lastError = nil
     receivedChunkCount = 0
     duplicateChunkCount = 0
@@ -372,6 +404,7 @@ final class TutorCoordinator {
     activeExecutionContext = nil
     latestResponse = response
     latestPresentation = presentation
+    latestLatencyMetrics = latestLatencyTrace?.snapshot
     let interactionInput = interactionInputFactory.make(
       presentation: presentation,
       sourceChunk: sourceChunk
@@ -413,6 +446,7 @@ final class TutorCoordinator {
     latestPresentation = nil
     latestInteractionInput = nil
     latestInteractionDecision = nil
+    latestLatencyMetrics = latestLatencyTrace?.snapshot
     if error == .cancelled {
       requestState = .cancelled(requestID: context.requestID)
       providerState = .cancelled(requestID: context.requestID)
@@ -432,6 +466,14 @@ final class TutorCoordinator {
       && activeExecutionContext == context
       && latestRequest?.id == context.requestID
       && latestRequest?.sequence == context.sequence
+  }
+
+  func markPanelPresented(responseID: UUID) {
+    guard latestResponse?.id == responseID else {
+      return
+    }
+    latestLatencyTrace?.markPanelPresented()
+    latestLatencyMetrics = latestLatencyTrace?.snapshot
   }
 
   private static func tutorError(from error: Error) -> TutorEngineError {

@@ -63,6 +63,26 @@ final class OpenAICompatibleProviderTests: XCTestCase {
     XCTAssertNotNil(jsonSchema["schema"] as? [String: Any])
   }
 
+  func testGenerateRecordsHTTPUsageAndModelWithoutResponseBody() async throws {
+    MockOpenAIURLProtocol.install { protocolInstance in
+      protocolInstance.respond(statusCode: 200, chunks: [Self.successResponseData])
+    }
+    let trace = TutorLatencyTrace()
+
+    _ = try await makeProvider().generate(from: prompt, latencyTrace: trace)
+
+    let metrics = trace.snapshot
+    XCTAssertNotNil(metrics.httpStartedAt)
+    XCTAssertNotNil(metrics.firstResponseByteAt)
+    XCTAssertNotNil(metrics.networkCompletedAt)
+    XCTAssertEqual(metrics.inputTokens, 12)
+    XCTAssertEqual(metrics.outputTokens, 7)
+    XCTAssertEqual(metrics.totalTokens, 19)
+    XCTAssertEqual(metrics.modelIdentifier, "test-model")
+    XCTAssertNil(metrics.firstSSEContentAt)
+    XCTAssertFalse(String(reflecting: metrics).contains("answer"))
+  }
+
   func testTutorSchemaIsAdaptedToStructuredOutputTransportSubset() async throws {
     let capturedBody = LockedValue<Data>()
     MockOpenAIURLProtocol.install { protocolInstance in
@@ -135,6 +155,38 @@ final class OpenAICompatibleProviderTests: XCTestCase {
     XCTAssertNil(chunks[0].finishReason)
     XCTAssertEqual(chunks[1].finishReason, .stop)
     XCTAssertEqual(chunks[0].providerMetadata.requestIdentifier, "chatcmpl-stream")
+  }
+
+  func testStreamRecordsFirstSSEContentWithoutStoringContent() async throws {
+    let eventData = Data(
+      (Self.streamEvent(content: "PRIVATE_STREAM_MARKER", finishReason: "stop")
+        + "data: [DONE]\n\n").utf8
+    )
+    let splitIndex = eventData.index(eventData.startIndex, offsetBy: 37)
+    MockOpenAIURLProtocol.install { protocolInstance in
+      protocolInstance.respond(
+        statusCode: 200,
+        chunks: [
+          Data(eventData[..<splitIndex]),
+          Data(eventData[splitIndex...]),
+        ]
+      )
+    }
+    let trace = TutorLatencyTrace()
+    let provider = makeProvider()
+    let stream = await provider.stream(from: prompt, latencyTrace: trace)
+
+    for try await _ in stream {}
+
+    let metrics = trace.snapshot
+    XCTAssertNotNil(metrics.httpStartedAt)
+    XCTAssertNotNil(metrics.firstResponseByteAt)
+    XCTAssertNotNil(metrics.firstSSEContentAt)
+    XCTAssertNotNil(metrics.networkCompletedAt)
+    XCTAssertNotNil(metrics.timeToFirstModelContent)
+    XCTAssertNotNil(metrics.generationDuration)
+    XCTAssertNotNil(metrics.responseTransferDuration)
+    XCTAssertFalse(String(reflecting: metrics).contains("PRIVATE_STREAM_MARKER"))
   }
 
   func testDoneTerminatesStreamWithoutWaitingForConnectionCompletion() async throws {

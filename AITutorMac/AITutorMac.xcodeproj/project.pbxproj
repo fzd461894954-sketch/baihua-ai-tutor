@@ -145,6 +145,9 @@
 		01000000000000000000008B /* TutorVoicePresentationAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008B /* TutorVoicePresentationAdapter.swift */; };
 		01000000000000000000008C /* TutorVoiceCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008C /* TutorVoiceCoordinator.swift */; };
 		01000000000000000000008D /* TutorVoiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008D /* TutorVoiceTests.swift */; };
+		01000000000000000000008E /* TutorLatencyMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008E /* TutorLatencyMetrics.swift */; };
+		01000000000000000000008F /* TutorLatencyBenchmarkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008F /* TutorLatencyBenchmarkController.swift */; };
+		010000000000000000000090 /* TutorLatencyBenchmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000090 /* TutorLatencyBenchmarkView.swift */; };
 		010000000000000000000091 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000091 /* DesignTokens.swift */; };
 		010000000000000000000092 /* BubbleChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000092 /* BubbleChrome.swift */; };
 		010000000000000000000093 /* MenuBarIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000093 /* MenuBarIntentTests.swift */; };
@@ -302,6 +305,9 @@
 		02000000000000000000008B /* TutorVoicePresentationAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoicePresentationAdapter.swift; sourceTree = "<group>"; };
 		02000000000000000000008C /* TutorVoiceCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoiceCoordinator.swift; sourceTree = "<group>"; };
 		02000000000000000000008D /* TutorVoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoiceTests.swift; sourceTree = "<group>"; };
+		02000000000000000000008E /* TutorLatencyMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorLatencyMetrics.swift; sourceTree = "<group>"; };
+		02000000000000000000008F /* TutorLatencyBenchmarkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorLatencyBenchmarkController.swift; sourceTree = "<group>"; };
+		020000000000000000000090 /* TutorLatencyBenchmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorLatencyBenchmarkView.swift; sourceTree = "<group>"; };
 		020000000000000000000091 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		020000000000000000000092 /* BubbleChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubbleChrome.swift; sourceTree = "<group>"; };
 		020000000000000000000093 /* MenuBarIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIntentTests.swift; sourceTree = "<group>"; };
@@ -737,6 +743,7 @@
 				070000000000000000000024 /* PromptBuilder */,
 				070000000000000000000025 /* LLM */,
 				070000000000000000000029 /* Settings */,
+				07000000000000000000002A /* Latency */,
 				02000000000000000000004C /* TutorRequest.swift */,
 				02000000000000000000004D /* TutorResponse.swift */,
 				02000000000000000000004E /* TutorEngine.swift */,
@@ -757,6 +764,14 @@
 			path = Tutor;
 			sourceTree = "<group>";
 		};
+		07000000000000000000002A /* Latency */ = {
+			isa = PBXGroup;
+			children = (
+				02000000000000000000008E /* TutorLatencyMetrics.swift */,
+			);
+			path = Latency;
+			sourceTree = "<group>";
+		};
 		070000000000000000000023 /* Debug */ = {
 			isa = PBXGroup;
 			children = (
@@ -765,6 +780,8 @@
 				020000000000000000000067 /* TutorRealDemoController.swift */,
 				020000000000000000000068 /* TutorRealDemoView.swift */,
 				02000000000000000000006B /* TutorEvaluationDataset.swift */,
+				02000000000000000000008F /* TutorLatencyBenchmarkController.swift */,
+				020000000000000000000090 /* TutorLatencyBenchmarkView.swift */,
 				020000000000000000000082 /* DebugLLMConfigurationStore.swift */,
 			);
 			path = Debug;
@@ -978,6 +995,9 @@
 				010000000000000000000089 /* TutorPetBubbleAdapter.swift in Sources */,
 				01000000000000000000008B /* TutorVoicePresentationAdapter.swift in Sources */,
 				01000000000000000000008C /* TutorVoiceCoordinator.swift in Sources */,
+				01000000000000000000008E /* TutorLatencyMetrics.swift in Sources */,
+				01000000000000000000008F /* TutorLatencyBenchmarkController.swift in Sources */,
+				010000000000000000000090 /* TutorLatencyBenchmarkView.swift in Sources */,
 				010000000000000000000054 /* TutorPresentationModel.swift in Sources */,
 				010000000000000000000056 /* TutorInteractionPolicy.swift in Sources */,
 				010000000000000000000057 /* TutorDisplayQueue.swift in Sources */,

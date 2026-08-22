@@ -16,15 +16,34 @@ struct LLMTutorEngine: TutorEngine, Sendable {
     to request: TutorRequest,
     prompt: PromptPackage
   ) async throws -> TutorResponse {
+    try await respond(to: request, prompt: prompt, latencyTrace: nil)
+  }
+
+  func respond(
+    to request: TutorRequest,
+    prompt: PromptPackage,
+    latencyTrace: TutorLatencyTrace?
+  ) async throws -> TutorResponse {
     try await withTaskCancellationHandler {
       let rawResponse: RawLLMResponse
       do {
-        rawResponse = try await provider.generate(from: prompt)
+        latencyTrace?.markHTTPStarted()
+        rawResponse = try await provider.generate(
+          from: prompt,
+          latencyTrace: latencyTrace
+        )
+        latencyTrace?.markNetworkCompleted()
+        latencyTrace?.recordUsage(rawResponse.usage)
+        latencyTrace?.recordModelIdentifier(
+          rawResponse.providerMetadata.modelIdentifier
+        )
       } catch is CancellationError {
         throw LLMProviderError.cancelled
       }
 
-      return try decoder.decode(rawResponse)
+      let response = try decoder.decode(rawResponse)
+      latencyTrace?.markDecoded()
+      return response
     } onCancel: {
       Task {
         await provider.cancel()

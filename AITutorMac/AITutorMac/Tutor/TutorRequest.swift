@@ -54,7 +54,7 @@ struct TutorOutputPreferences: Equatable, Sendable {
   static func `default`(language: String = "zh-Hans") -> TutorOutputPreferences {
     TutorOutputPreferences(
       language: language,
-      detailLevel: .balanced,
+      detailLevel: .concise,
       includeAnalogy: true,
       includeExample: true,
       includeCheckQuestion: false

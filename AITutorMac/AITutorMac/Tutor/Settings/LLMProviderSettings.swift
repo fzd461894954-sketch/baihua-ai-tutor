@@ -68,7 +68,7 @@ struct LLMProviderSettings: Codable, Equatable, Sendable {
     model: "",
     responseFormatCapability: .automatic,
     temperature: 0.2,
-    maxOutputTokens: 1_800,
+    maxOutputTokens: TutorResponseBudget.compactLesson.maximumOutputTokens,
     isEnabled: true
   )
 

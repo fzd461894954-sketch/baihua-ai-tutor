@@ -254,6 +254,77 @@ final class TutorRealDemoTests: XCTestCase {
     XCTAssertEqual(controller.latestFailure, .unsupportedEndpoint)
   }
 
+  func testLatencyBenchmarkRunsSameSyntheticCaseFiveTimes() async throws {
+    let provider = FakeLLMProvider(behavior: .success)
+    let providerFactory = BenchmarkProviderFactoryStub(provider: provider)
+    let controller = TutorLatencyBenchmarkController(
+      providerFactory: providerFactory,
+      providerBuilder: { _ in provider }
+    )
+    controller.selectedCaseID = "api"
+
+    controller.runFiveTimes()
+    await waitForBenchmarkTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .completed)
+    XCTAssertEqual(controller.records.count, 5)
+    XCTAssertEqual(controller.completedRuns, 5)
+    XCTAssertEqual(controller.records.map(\.runNumber), [1, 2, 3, 4, 5])
+    XCTAssertTrue(controller.records.allSatisfy { $0.caseID == "api" })
+    XCTAssertTrue(controller.records.allSatisfy(\.succeeded))
+    XCTAssertTrue(controller.records.allSatisfy { $0.metrics.promptSize != nil })
+    XCTAssertEqual(controller.summary.total?.sampleCount, 5)
+    let generateCallCount = await provider.generateCallCount
+    XCTAssertEqual(generateCallCount, 5)
+  }
+
+  func testLatencyTraceDerivesPipelineDurationsAndNeverStoresBodies() {
+    let origin = Date(timeIntervalSince1970: 10_000)
+    let trace = TutorLatencyTrace(userActionAt: origin)
+    let prompt = PromptPackage(
+      systemInstruction: "system",
+      userContent: "PRIVATE_SOURCE_BODY",
+      outputSchema: "schema",
+      constraints: ["rule"]
+    )
+    trace.markContentResolved(at: origin.addingTimeInterval(0.1))
+    trace.markRequestCreated(requestID: UUID(), at: origin.addingTimeInterval(0.2))
+    trace.markPromptBuilt(
+      prompt,
+      sourceCharacterCount: 19,
+      at: origin.addingTimeInterval(0.3)
+    )
+    trace.markHTTPStarted(at: origin.addingTimeInterval(0.4))
+    trace.markFirstResponseByte(at: origin.addingTimeInterval(1.4))
+    trace.markNetworkCompleted(at: origin.addingTimeInterval(2.4))
+    trace.markDecoded(at: origin.addingTimeInterval(2.5))
+    trace.markValidated(at: origin.addingTimeInterval(2.6))
+    trace.markPresentationReady(at: origin.addingTimeInterval(2.7))
+    trace.markPanelPresented(at: origin.addingTimeInterval(2.8))
+    trace.recordUsage(
+      LLMUsageMetadata(
+        inputTokenCount: 100,
+        outputTokenCount: 50,
+        totalTokenCount: 150
+      )
+    )
+
+    let metrics = trace.snapshot
+    XCTAssertEqual(metrics.currentContentLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.promptBuildLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.requestSetupLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.timeToFirstByte ?? -1, 1, accuracy: 0.001)
+    XCTAssertNil(metrics.generationDuration)
+    XCTAssertEqual(metrics.responseTransferDuration ?? -1, 1, accuracy: 0.001)
+    XCTAssertEqual(metrics.decodeLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.validationLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.presentationLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.totalTutorLatency ?? -1, 2.8, accuracy: 0.001)
+    XCTAssertNil(metrics.timeToFirstModelContent)
+    XCTAssertEqual(metrics.totalTokens, 150)
+    XCTAssertFalse(String(reflecting: metrics).contains("PRIVATE_SOURCE_BODY"))
+  }
+
   private func makeController(
     provider: any LLMProvider
   ) -> TutorRealDemoController {
@@ -304,6 +375,41 @@ final class TutorRealDemoTests: XCTestCase {
       try? await Task.sleep(nanoseconds: 2_000_000)
     }
   }
+
+  private func waitForBenchmarkTerminalState(
+    _ controller: TutorLatencyBenchmarkController
+  ) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + 2_000_000_000
+    while controller.state == .running,
+          DispatchTime.now().uptimeNanoseconds < deadline
+    {
+      try? await Task.sleep(nanoseconds: 2_000_000)
+    }
+    if controller.state == .running {
+      XCTFail("Timed out waiting for latency benchmark")
+    }
+  }
+}
+
+private struct BenchmarkProviderFactoryStub: TutorProviderBuilding {
+  let provider: any LLMProvider
+
+  func configurationSnapshot() throws -> TutorProviderConfigurationSnapshot {
+    TutorProviderConfigurationSnapshot(
+      profileID: "benchmark-test",
+      endpoint: URL(string: "https://example.test/v1/chat/completions")!,
+      model: "benchmark-model",
+      responseFormat: .jsonObject,
+      temperature: 0.2,
+      maxOutputTokens: 900,
+      credentialReference: "benchmark-test",
+      credential: RuntimeCredential("runtime-test-placeholder")
+    )
+  }
+
+  func makeProvider() throws -> any LLMProvider { provider }
+
+  func isAvailable() -> Bool { true }
 }
 
 private actor DecoratedTutorDemoProvider: LLMProvider {

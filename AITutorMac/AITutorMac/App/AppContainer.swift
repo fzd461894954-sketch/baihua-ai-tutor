@@ -33,6 +33,7 @@ final class AppContainer {
   let tutorCoordinator: TutorCoordinator
   let tutorDebugWindowController: TutorDebugWindowController
   let debugLLMConfigurationStore: DebugLLMConfigurationStore
+  let tutorLatencyBenchmarkController: TutorLatencyBenchmarkController
   let realtimeVoiceCoordinator: DoubaoRealtimeVoiceCoordinator
   let realtimeVoiceSpikeWindowController: RealtimeVoiceSpikeWindowController
   private let realtimeVoiceLifecycleMonitor: RealtimeVoiceLifecycleMonitor
@@ -104,9 +105,14 @@ final class AppContainer {
     let realDemoController = TutorRealDemoController(
       configurationStore: debugLLMConfigurationStore
     )
+    let tutorLatencyBenchmarkController = TutorLatencyBenchmarkController(
+      providerFactory: tutorProviderFactory
+    )
+    self.tutorLatencyBenchmarkController = tutorLatencyBenchmarkController
     let tutorDebugWindowController = TutorDebugWindowController(
       coordinator: tutorCoordinator,
-      realDemoController: realDemoController
+      realDemoController: realDemoController,
+      latencyBenchmarkController: tutorLatencyBenchmarkController
     )
     self.tutorDebugWindowController = tutorDebugWindowController
 

@@ -166,13 +166,25 @@ struct ProductionTutorEngine: TutorEngine, Sendable {
     to request: TutorRequest,
     prompt: PromptPackage
   ) async throws -> TutorResponse {
+    try await respond(to: request, prompt: prompt, latencyTrace: nil)
+  }
+
+  func respond(
+    to request: TutorRequest,
+    prompt: PromptPackage,
+    latencyTrace: TutorLatencyTrace?
+  ) async throws -> TutorResponse {
     let provider: any LLMProvider
     do {
       provider = try providerFactory.makeProvider()
     } catch {
       throw TutorEngineError.unavailable
     }
-    return try await LLMTutorEngine(provider: provider).respond(to: request, prompt: prompt)
+    return try await LLMTutorEngine(provider: provider).respond(
+      to: request,
+      prompt: prompt,
+      latencyTrace: latencyTrace
+    )
   }
 }
 

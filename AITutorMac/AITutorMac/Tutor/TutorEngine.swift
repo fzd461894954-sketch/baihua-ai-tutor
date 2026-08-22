@@ -5,6 +5,22 @@ protocol TutorEngine: Sendable {
     to request: TutorRequest,
     prompt: PromptPackage
   ) async throws -> TutorResponse
+
+  func respond(
+    to request: TutorRequest,
+    prompt: PromptPackage,
+    latencyTrace: TutorLatencyTrace?
+  ) async throws -> TutorResponse
+}
+
+extension TutorEngine {
+  func respond(
+    to request: TutorRequest,
+    prompt: PromptPackage,
+    latencyTrace: TutorLatencyTrace?
+  ) async throws -> TutorResponse {
+    try await respond(to: request, prompt: prompt)
+  }
 }
 
 enum TutorRequestValidationIssue: Equatable, Sendable {

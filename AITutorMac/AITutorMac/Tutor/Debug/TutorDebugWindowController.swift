@@ -6,19 +6,17 @@ import SwiftUI
 final class TutorDebugWindowController: NSObject, NSWindowDelegate {
   private let coordinator: TutorCoordinator
   private let realDemoController: TutorRealDemoController
+  private let latencyBenchmarkController: TutorLatencyBenchmarkController
   private var window: NSWindow?
-
-  init(coordinator: TutorCoordinator) {
-    self.coordinator = coordinator
-    realDemoController = TutorRealDemoController()
-  }
 
   init(
     coordinator: TutorCoordinator,
-    realDemoController: TutorRealDemoController
+    realDemoController: TutorRealDemoController,
+    latencyBenchmarkController: TutorLatencyBenchmarkController
   ) {
     self.coordinator = coordinator
     self.realDemoController = realDemoController
+    self.latencyBenchmarkController = latencyBenchmarkController
   }
 
   func show() {
@@ -31,11 +29,13 @@ final class TutorDebugWindowController: NSObject, NSWindowDelegate {
 
   func stop() {
     realDemoController.shutdown()
+    latencyBenchmarkController.reset()
     window?.orderOut(nil)
   }
 
   func windowWillClose(_ notification: Notification) {
     realDemoController.dismiss()
+    latencyBenchmarkController.cancel()
   }
 
   private func makeWindow() -> NSWindow {
@@ -58,6 +58,10 @@ final class TutorDebugWindowController: NSObject, NSWindowDelegate {
         TutorRealDemoView(controller: realDemoController)
           .tabItem {
             Label("Real LLM Demo", systemImage: "checkmark.seal")
+          }
+        TutorLatencyBenchmarkView(controller: latencyBenchmarkController)
+          .tabItem {
+            Label("Latency 5×", systemImage: "stopwatch")
           }
       }
     )
