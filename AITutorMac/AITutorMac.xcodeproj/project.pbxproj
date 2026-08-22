@@ -145,6 +145,9 @@
 		01000000000000000000008B /* TutorVoicePresentationAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008B /* TutorVoicePresentationAdapter.swift */; };
 		01000000000000000000008C /* TutorVoiceCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008C /* TutorVoiceCoordinator.swift */; };
 		01000000000000000000008D /* TutorVoiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02000000000000000000008D /* TutorVoiceTests.swift */; };
+		010000000000000000000091 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000091 /* DesignTokens.swift */; };
+		010000000000000000000092 /* BubbleChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000092 /* BubbleChrome.swift */; };
+		010000000000000000000093 /* MenuBarIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000093 /* MenuBarIntentTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -299,6 +302,9 @@
 		02000000000000000000008B /* TutorVoicePresentationAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoicePresentationAdapter.swift; sourceTree = "<group>"; };
 		02000000000000000000008C /* TutorVoiceCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoiceCoordinator.swift; sourceTree = "<group>"; };
 		02000000000000000000008D /* TutorVoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorVoiceTests.swift; sourceTree = "<group>"; };
+		020000000000000000000091 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		020000000000000000000092 /* BubbleChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BubbleChrome.swift; sourceTree = "<group>"; };
+		020000000000000000000093 /* MenuBarIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIntentTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -368,10 +374,20 @@
 		070000000000000000000005 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				07000000000000000000002B /* DesignSystem */,
 				070000000000000000000006 /* FloatingPanel */,
 				070000000000000000000007 /* MenuBar */,
 			);
 			path = UI;
+			sourceTree = "<group>";
+		};
+		07000000000000000000002B /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000091 /* DesignTokens.swift */,
+				020000000000000000000092 /* BubbleChrome.swift */,
+			);
+			path = DesignSystem;
 			sourceTree = "<group>";
 		};
 		070000000000000000000006 /* FloatingPanel */ = {
@@ -434,6 +450,7 @@
 				020000000000000000000088 /* ProviderSettingsTests.swift */,
 				02000000000000000000008A /* TutorPetBubbleTests.swift */,
 				02000000000000000000008D /* TutorVoiceTests.swift */,
+				020000000000000000000093 /* MenuBarIntentTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -898,6 +915,8 @@
 				01000000000000000000006C /* TutorPresentationRouter.swift in Sources */,
 				01000000000000000000006D /* TutorPanelFixtures.swift in Sources */,
 				010000000000000000000008 /* MenuBarContentView.swift in Sources */,
+				010000000000000000000091 /* DesignTokens.swift in Sources */,
+				010000000000000000000092 /* BubbleChrome.swift in Sources */,
 				010000000000000000000009 /* AppLogger.swift in Sources */,
 				01000000000000000000000C /* PetModel.swift in Sources */,
 				01000000000000000000000D /* PetConfiguration.swift in Sources */,
@@ -1029,6 +1048,7 @@
 				010000000000000000000088 /* ProviderSettingsTests.swift in Sources */,
 				01000000000000000000008A /* TutorPetBubbleTests.swift in Sources */,
 				01000000000000000000008D /* TutorVoiceTests.swift in Sources */,
+				010000000000000000000093 /* MenuBarIntentTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

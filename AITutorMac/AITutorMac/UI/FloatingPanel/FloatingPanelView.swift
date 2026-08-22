@@ -280,17 +280,42 @@ private struct TutorPanelCard<Content: View>: View {
 }
 
 #if DEBUG
-#Preview("Lesson") {
-  let store = TutorPanelContentStore(availability: .available)
-  let petStateController = PetStateController()
-  let voiceController = VoiceController(petStateController: petStateController)
-  let tutorVoiceCoordinator = TutorVoiceCoordinator(voiceController: voiceController)
-  store.present(TutorPanelPresentationFixtures.apiLesson)
-  return FloatingPanelView(
-    contentStore: store,
-    actionHandler: .unavailable,
-    tutorVoiceCoordinator: tutorVoiceCoordinator
-  )
+private struct TutorPanelFixturePreview: View {
+  let fixture: TutorPanelDebugFixture
+
+  var body: some View {
+    let store = makeStore()
+    let petStateController = PetStateController()
+    let voiceController = VoiceController(petStateController: petStateController)
+    let voiceCoordinator = TutorVoiceCoordinator(voiceController: voiceController)
+    FloatingPanelView(
+      contentStore: store,
+      actionHandler: .unavailable,
+      tutorVoiceCoordinator: voiceCoordinator
+    )
     .frame(width: 400, height: 600)
+  }
+
+  private func makeStore() -> TutorPanelContentStore {
+    let store = TutorPanelContentStore(availability: .available)
+    switch fixture {
+    case .empty: break
+    case .loading: store.setLoading()
+    case .lesson: store.present(TutorPanelPresentationFixtures.apiLesson)
+    case .needsMoreContext: store.present(TutorPanelPresentationFixtures.needsMoreContext)
+    case .blocked: store.present(TutorPanelPresentationFixtures.blocked)
+    case .error: store.presentError()
+    case .longLesson: store.present(TutorPanelPresentationFixtures.longLesson)
+    }
+    return store
+  }
 }
+
+#Preview("Tutor Panel · Empty") { TutorPanelFixturePreview(fixture: .empty) }
+#Preview("Tutor Panel · Loading") { TutorPanelFixturePreview(fixture: .loading) }
+#Preview("Tutor Panel · Lesson") { TutorPanelFixturePreview(fixture: .lesson) }
+#Preview("Tutor Panel · Needs Context") { TutorPanelFixturePreview(fixture: .needsMoreContext) }
+#Preview("Tutor Panel · Blocked") { TutorPanelFixturePreview(fixture: .blocked) }
+#Preview("Tutor Panel · Error") { TutorPanelFixturePreview(fixture: .error) }
+#Preview("Tutor Panel · Long Lesson") { TutorPanelFixturePreview(fixture: .longLesson) }
 #endif

@@ -393,3 +393,60 @@ final class AIModelSettingsWindowController: NSObject, NSWindowDelegate {
     return window
   }
 }
+
+#if DEBUG
+private final class PreviewModelSettingsStore: LLMProviderSettingsStoring, @unchecked Sendable {
+  private var value: LLMProviderSettings?
+
+  init(_ value: LLMProviderSettings?) {
+    self.value = value
+  }
+
+  func load() throws -> LLMProviderSettings? { value }
+  func save(_ settings: LLMProviderSettings) throws { value = settings }
+  func delete() throws { value = nil }
+}
+
+private final class PreviewCredentialStore: CredentialStoring, @unchecked Sendable {
+  private var isConfigured: Bool
+
+  init(configured: Bool) {
+    isConfigured = configured
+  }
+
+  func storeCredential(_ credential: String, for account: String) throws {
+    isConfigured = !credential.isEmpty
+  }
+
+  func readCredential(for account: String) throws -> String? { nil }
+  func deleteCredential(for account: String) throws { isConfigured = false }
+  func credentialExists(for account: String) throws -> Bool { isConfigured }
+}
+
+private struct PreviewConnectionTester: TutorConnectionTesting {
+  func testConnection() async throws -> TutorConnectionResult {
+    TutorConnectionResult(latencyMilliseconds: 128)
+  }
+}
+
+#Preview("AI Model Settings · Configured") {
+  var settings = LLMProviderSettings.default
+  settings.model = "doubao-seed-preview"
+  let controller = AIModelSettingsController(
+    settingsStore: PreviewModelSettingsStore(settings),
+    credentialStore: PreviewCredentialStore(configured: true),
+    connectionTester: PreviewConnectionTester()
+  )
+  return AIModelSettingsView(controller: controller)
+}
+
+#Preview("AI Model Settings · Needs Setup") {
+  AIModelSettingsView(
+    controller: AIModelSettingsController(
+      settingsStore: PreviewModelSettingsStore(nil),
+      credentialStore: PreviewCredentialStore(configured: false),
+      connectionTester: PreviewConnectionTester()
+    )
+  )
+}
+#endif

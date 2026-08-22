@@ -10,13 +10,26 @@ struct AITutorApp: App {
         appState: appDelegate.appState,
         contextState: appDelegate.contextState,
         accessibilitySnapshotController: appDelegate.accessibilitySnapshotController,
-        showPanel: appDelegate.showPanel,
-        hidePanel: appDelegate.hidePanel,
-        showPet: appDelegate.showPet,
-        hidePet: appDelegate.hidePet,
-        showPetLibrary: appDelegate.showPetLibrary,
-        showModelSettings: appDelegate.showModelSettings,
-        showVoiceSettings: appDelegate.showVoiceSettings,
+        onIntent: { intent in
+          switch intent {
+          case .togglePanel:
+            appDelegate.appState.isPanelVisible
+              ? appDelegate.hidePanel()
+              : appDelegate.showPanel()
+          case .togglePetVisibility:
+            appDelegate.appState.isPetVisible
+              ? appDelegate.hidePet()
+              : appDelegate.showPet()
+          case .openSettings:
+            appDelegate.showModelSettings()
+          case .openPetLibrary:
+            appDelegate.showPetLibrary()
+          case .openVoiceSettings:
+            appDelegate.showVoiceSettings()
+          case .quit:
+            appDelegate.terminateApp()
+          }
+        },
         showAccessibilityDebug: appDelegate.showAccessibilityDebug,
         showTutorDebug: appDelegate.showTutorDebug,
         petStateController: appDelegate.petStateController,
@@ -24,8 +37,7 @@ struct AITutorApp: App {
         speechInputController: appDelegate.speechInputController,
         transitionPetState: appDelegate.transitionPetState,
         speak: appDelegate.speak,
-        stopSpeaking: appDelegate.stopSpeaking,
-        terminateApp: appDelegate.terminateApp
+        stopSpeaking: appDelegate.stopSpeaking
       )
     }
     .menuBarExtraStyle(.menu)

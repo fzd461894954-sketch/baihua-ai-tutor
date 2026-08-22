@@ -1,17 +1,40 @@
 import AppKit
 import SwiftUI
 
+enum MenuBarIntent: Equatable {
+  case togglePanel
+  case togglePetVisibility
+  case openSettings
+  case openPetLibrary
+  case openVoiceSettings
+  case quit
+}
+
+enum MenuBarItem: CaseIterable {
+  case panel
+  case petVisibility
+  case petLibrary
+  case settings
+  case voiceSettings
+  case quit
+
+  var intent: MenuBarIntent {
+    switch self {
+    case .panel: .togglePanel
+    case .petVisibility: .togglePetVisibility
+    case .petLibrary: .openPetLibrary
+    case .settings: .openSettings
+    case .voiceSettings: .openVoiceSettings
+    case .quit: .quit
+    }
+  }
+}
+
 struct MenuBarContentView: View {
   let appState: AppState
   let contextState: ContextState
   let accessibilitySnapshotController: AccessibilitySnapshotController
-  let showPanel: () -> Void
-  let hidePanel: () -> Void
-  let showPet: () -> Void
-  let hidePet: () -> Void
-  let showPetLibrary: () -> Void
-  let showModelSettings: () -> Void
-  let showVoiceSettings: () -> Void
+  let onIntent: (MenuBarIntent) -> Void
   let showAccessibilityDebug: () -> Void
   let showTutorDebug: () -> Void
   let petStateController: PetStateController
@@ -20,7 +43,6 @@ struct MenuBarContentView: View {
   let transitionPetState: (PetState) -> Void
   let speak: (String) -> Void
   let stopSpeaking: () -> Void
-  let terminateApp: () -> Void
 
   var body: some View {
     Text("白话 AI")
@@ -28,23 +50,23 @@ struct MenuBarContentView: View {
 
     Divider()
 
-    Button("打开教学窗口", action: showPanel)
+    Button("打开教学窗口") { send(.panel) }
       .disabled(appState.isPanelVisible)
-    Button("隐藏教学窗口", action: hidePanel)
+    Button("隐藏教学窗口") { send(.panel) }
       .disabled(!appState.isPanelVisible)
 
     Divider()
 
-    Button("显示吉祥物", action: showPet)
+    Button("显示吉祥物") { send(.petVisibility) }
       .disabled(appState.isPetVisible)
-    Button("隐藏吉祥物", action: hidePet)
+    Button("隐藏吉祥物") { send(.petVisibility) }
       .disabled(!appState.isPetVisible)
 
     Divider()
 
-    Button("我的桌面老师…", action: showPetLibrary)
-    Button("设置…", action: showModelSettings)
-    Button("语音设置…", action: showVoiceSettings)
+    Button("我的桌面老师…") { send(.petLibrary) }
+    Button("设置…") { send(.settings) }
+    Button("语音设置…") { send(.voiceSettings) }
 
     if speechInputController.isMicrophoneActive {
       Label("正在听…", systemImage: "mic.fill")
@@ -96,7 +118,11 @@ struct MenuBarContentView: View {
 
     Divider()
 
-    Button("退出白话 AI", action: terminateApp)
+    Button("退出白话 AI") { send(.quit) }
       .keyboardShortcut("q")
+  }
+
+  private func send(_ item: MenuBarItem) {
+    onIntent(item.intent)
   }
 }

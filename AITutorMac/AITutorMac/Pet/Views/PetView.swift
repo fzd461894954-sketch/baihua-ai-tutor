@@ -71,7 +71,11 @@ private struct TutorUnreadBadgeView: View {
       .overlay {
         Circle().stroke(.white.opacity(0.9), lineWidth: 1.5)
       }
-      .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+      .shadow(
+        color: AppShadow.badge.color,
+        radius: AppShadow.badge.radius,
+        y: AppShadow.badge.y
+      )
       .accessibilityHidden(true)
   }
 }
@@ -82,12 +86,16 @@ private struct VoiceInputBadgeView: View {
       .font(.system(size: 13, weight: .bold))
       .foregroundStyle(.white)
       .frame(width: 27, height: 27)
-      .background(.red, in: Circle())
+      .background(AppColors.listeningAttention, in: Circle())
       .overlay {
         Circle()
           .stroke(.white.opacity(0.8), lineWidth: 1.5)
       }
-      .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+      .shadow(
+        color: AppShadow.badge.color,
+        radius: AppShadow.badge.radius,
+        y: AppShadow.badge.y
+      )
       .accessibilityLabel("正在使用麦克风")
   }
 }
@@ -128,25 +136,19 @@ struct PetBubbleView: View {
   let bubble: PetBubble
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 5) {
-      Text(bubble.title)
-        .font(.system(size: 14, weight: .semibold))
+    BubbleChrome {
+      VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+        Text(bubble.title)
+          .font(AppTypography.bubbleTitle)
 
-      if let detail = bubble.detail {
-        Text(detail)
-          .font(.system(size: 12))
-          .foregroundStyle(.secondary)
+        if let detail = bubble.detail {
+          Text(detail)
+            .font(AppTypography.bubbleBody)
+            .foregroundStyle(.secondary)
+        }
       }
     }
-    .padding(.horizontal, 14)
-    .padding(.vertical, 11)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 14, style: .continuous)
-        .stroke(.primary.opacity(0.08), lineWidth: 1)
-    }
-    .padding(5)
+    .padding(AppSpacing.xxs)
   }
 }
 
@@ -155,31 +157,25 @@ struct PetTutorBubbleView: View {
   let onOpenTutor: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 7) {
-      Text(notification.title)
-        .font(.system(size: 14, weight: .semibold))
+    BubbleChrome {
+      VStack(alignment: .leading, spacing: AppSpacing.xs) {
+        Text(notification.title)
+          .font(AppTypography.bubbleTitle)
 
-      Text(notification.message)
-        .font(.system(size: 12))
-        .foregroundStyle(.secondary)
-        .lineLimit(2)
+        Text(notification.message)
+          .font(AppTypography.bubbleBody)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
 
-      HStack {
-        Spacer()
-        Button("查看解释", action: onOpenTutor)
-          .controlSize(.small)
-          .buttonStyle(.borderedProminent)
+        HStack {
+          Spacer()
+          Button("查看解释", action: onOpenTutor)
+            .controlSize(.small)
+            .buttonStyle(.borderedProminent)
+        }
       }
     }
-    .padding(.horizontal, 14)
-    .padding(.vertical, 11)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 14, style: .continuous)
-        .stroke(.primary.opacity(0.08), lineWidth: 1)
-    }
-    .padding(5)
+    .padding(AppSpacing.xxs)
   }
 }
 
@@ -197,29 +193,16 @@ private struct PetStateBadgeView: View {
         Circle()
           .stroke(.white.opacity(0.8), lineWidth: 1.5)
       }
-      .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+      .shadow(
+        color: AppShadow.badge.color,
+        radius: AppShadow.badge.radius,
+        y: AppShadow.badge.y
+      )
       .accessibilityHidden(true)
   }
 
   private var badgeColor: Color {
-    switch state {
-    case .idle:
-      return .clear
-    case .watching:
-      return .blue
-    case .thinking:
-      return .purple
-    case .speaking:
-      return .indigo
-    case .needsInput:
-      return .cyan
-    case .warning:
-      return .orange
-    case .success:
-      return .green
-    case .error:
-      return .red
-    }
+    AppColors.petState(state)
   }
 }
 
@@ -233,10 +216,29 @@ private struct PetAssetPlaceholder: View {
       Text(petName)
         .font(.system(size: 13, weight: .semibold))
       Text("等待透明素材")
-        .font(.system(size: 10))
+        .font(.caption)
         .foregroundStyle(.secondary)
     }
-    .foregroundStyle(.purple)
-    .padding(8)
+    .foregroundStyle(AppColors.brand)
+    .padding(AppSpacing.xs)
   }
 }
+
+#if DEBUG
+#Preview("Pet Bubble Matrix") {
+  VStack(spacing: AppSpacing.md) {
+    PetBubbleView(bubble: .welcome)
+      .frame(width: 300, height: 90)
+    PetBubbleView(bubble: .warning)
+      .frame(width: 300, height: 70)
+  }
+  .padding()
+}
+
+#Preview("Pet Bubble Dark") {
+  PetBubbleView(bubble: .welcome)
+    .frame(width: 300, height: 90)
+    .padding()
+    .preferredColorScheme(.dark)
+}
+#endif

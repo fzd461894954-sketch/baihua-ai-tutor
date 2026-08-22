@@ -10,43 +10,38 @@ struct PushToTalkBubbleView: View {
   var body: some View {
     @Bindable var speechInputController = speechInputController
 
-    VStack(alignment: .leading, spacing: 10) {
-      if let tutorNotification,
-         !speechInputController.isInteractionActive {
-        tutorReadyContent(tutorNotification)
-        Divider()
-      }
+    BubbleChrome {
+      VStack(alignment: .leading, spacing: AppSpacing.sm) {
+        if let tutorNotification,
+           !speechInputController.isInteractionActive {
+          tutorReadyContent(tutorNotification)
+          Divider()
+        }
 
-      HStack(spacing: 7) {
-        Image(systemName: headerSymbol)
-          .foregroundStyle(headerColor)
-        Text(headerTitle)
-          .font(.system(size: 14, weight: .semibold))
-        Spacer()
-      }
+        HStack(spacing: AppSpacing.xs) {
+          Image(systemName: headerSymbol)
+            .foregroundStyle(headerColor)
+          Text(headerTitle)
+            .font(AppTypography.bubbleTitle)
+          Spacer()
+        }
 
-      if speechInputController.isShowingPermissionExplanation {
-        permissionExplanation
-      } else if speechInputController.isShowingCloudConsent {
-        cloudConsent
-      } else {
-        interactionContent
-      }
+        if speechInputController.isShowingPermissionExplanation {
+          permissionExplanation
+        } else if speechInputController.isShowingCloudConsent {
+          cloudConsent
+        } else {
+          interactionContent
+        }
 
 #if DEBUG
-      Text(debugStatus)
-        .font(.system(size: 9, design: .monospaced))
-        .foregroundStyle(.tertiary)
+        Text(debugStatus)
+          .font(.system(size: 9, design: .monospaced))
+          .foregroundStyle(.tertiary)
 #endif
+      }
     }
-    .padding(14)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 15, style: .continuous)
-        .stroke(.primary.opacity(0.08), lineWidth: 1)
-    }
-    .padding(5)
+    .padding(AppSpacing.xxs)
   }
 
   private func tutorReadyContent(
@@ -57,9 +52,9 @@ struct PushToTalkBubbleView: View {
         .foregroundStyle(.purple)
       VStack(alignment: .leading, spacing: 2) {
         Text("解释已经准备好了")
-          .font(.system(size: 12, weight: .semibold))
+          .font(AppTypography.bubbleTitle)
         Text(notification.message)
-          .font(.system(size: 10))
+          .font(AppTypography.bubbleBody)
           .foregroundStyle(.secondary)
           .lineLimit(2)
       }
@@ -75,7 +70,7 @@ struct PushToTalkBubbleView: View {
   private var permissionExplanation: some View {
     VStack(alignment: .leading, spacing: 9) {
       Text(SpeechInputController.permissionExplanation)
-        .font(.system(size: 12))
+        .font(AppTypography.bubbleBody)
         .fixedSize(horizontal: false, vertical: true)
 
       HStack {
@@ -95,7 +90,7 @@ struct PushToTalkBubbleView: View {
   private var cloudConsent: some View {
     VStack(alignment: .leading, spacing: 9) {
       Text(speechInputController.message ?? "")
-        .font(.system(size: 12))
+        .font(AppTypography.bubbleBody)
         .fixedSize(horizontal: false, vertical: true)
 
       HStack {
@@ -113,7 +108,7 @@ struct PushToTalkBubbleView: View {
   private var interactionContent: some View {
     VStack(alignment: .leading, spacing: 9) {
       Text(displayText)
-        .font(.system(size: 12))
+        .font(AppTypography.bubbleBody)
         .foregroundStyle(displayTextColor)
         .lineLimit(3)
         .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
@@ -127,7 +122,7 @@ struct PushToTalkBubbleView: View {
         pushToTalkControl
       }
 
-      HStack(spacing: 8) {
+      HStack(spacing: AppSpacing.xs) {
         if speechInputController.state == .completed {
           Button("清除") {
             speechInputController.clear()
@@ -141,17 +136,17 @@ struct PushToTalkBubbleView: View {
           onOpenTutor()
         }
       }
-      .font(.system(size: 11))
+      .font(.callout)
     }
   }
 
   private var pushToTalkControl: some View {
     ZStack {
-      RoundedRectangle(cornerRadius: 9, style: .continuous)
+      RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
         .fill(
           speechInputController.state == .listening
-            ? Color.red.opacity(0.9)
-            : Color.accentColor
+            ? AppColors.listeningAttention
+            : AppColors.brand
         )
 
       Label(
@@ -160,7 +155,7 @@ struct PushToTalkBubbleView: View {
           ? "mic.fill"
           : "mic"
       )
-      .font(.system(size: 12, weight: .semibold))
+      .font(AppTypography.bubbleBody.weight(.semibold))
       .foregroundStyle(.white)
 
       HoldToTalkCaptureView(
@@ -172,7 +167,12 @@ struct PushToTalkBubbleView: View {
     .frame(height: 34)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(pushToTalkLabel)
-    .accessibilityHint("按住开始使用麦克风，松开结束")
+    .accessibilityValue(pushToTalkAccessibilityValue)
+    .accessibilityHint("按住或按住空格键说话；VoiceOver 操作可开始，再次操作结束")
+    .accessibilityAddTraits(.isButton)
+    .accessibilityAction(.default) {
+      togglePushToTalkForAccessibility()
+    }
   }
 
   private var isPushToTalkEnabled: Bool {
@@ -186,6 +186,19 @@ struct PushToTalkBubbleView: View {
 
   private var pushToTalkLabel: String {
     speechInputController.state == .completed ? "按住重新说" : "按住说话"
+  }
+
+  private var pushToTalkAccessibilityValue: String {
+    speechInputController.state == .listening ? "正在听，再次操作结束" : "未在听，操作后开始"
+  }
+
+  private func togglePushToTalkForAccessibility() {
+    guard isPushToTalkEnabled else { return }
+    if speechInputController.state == .listening {
+      speechInputController.endPushToTalk()
+    } else {
+      speechInputController.beginPushToTalk()
+    }
   }
 
   private var headerTitle: String {
@@ -212,7 +225,9 @@ struct PushToTalkBubbleView: View {
   }
 
   private var headerColor: Color {
-    speechInputController.state == .listening ? .red : .purple
+    speechInputController.state == .listening
+      ? AppColors.listeningAttention
+      : AppColors.stateActive
   }
 
   private var displayText: String {
@@ -291,6 +306,27 @@ final class HoldToTalkCaptureNSView: NSView {
   private var globalMouseUpMonitor: Any?
 
   override var acceptsFirstResponder: Bool { true }
+  override var focusRingMaskBounds: NSRect { bounds }
+
+  override init(frame frameRect: NSRect) {
+    super.init(frame: frameRect)
+    focusRingType = .default
+    setAccessibilityElement(false)
+  }
+
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
+    focusRingType = .default
+    setAccessibilityElement(false)
+  }
+
+  override func drawFocusRingMask() {
+    NSBezierPath(
+      roundedRect: bounds.insetBy(dx: 2, dy: 2),
+      xRadius: AppRadius.control,
+      yRadius: AppRadius.control
+    ).fill()
+  }
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
     true
@@ -300,6 +336,7 @@ final class HoldToTalkCaptureNSView: NSView {
     guard isEnabled, !isHolding else {
       return
     }
+    window?.makeFirstResponder(self)
     isHolding = true
     installReleaseMonitorsIfNeeded()
     onPress?()
@@ -311,6 +348,37 @@ final class HoldToTalkCaptureNSView: NSView {
 
   override func mouseUp(with event: NSEvent) {
     releaseIfNeeded()
+  }
+
+  override func keyDown(with event: NSEvent) {
+    guard isSpaceKey(event) else {
+      super.keyDown(with: event)
+      return
+    }
+    guard isEnabled, !isHolding, !event.isARepeat else { return }
+    isHolding = true
+    onPress?()
+  }
+
+  override func keyUp(with event: NSEvent) {
+    guard isSpaceKey(event) else {
+      super.keyUp(with: event)
+      return
+    }
+    releaseIfNeeded()
+  }
+
+  override func becomeFirstResponder() -> Bool {
+    let accepted = super.becomeFirstResponder()
+    if accepted { needsDisplay = true }
+    return accepted
+  }
+
+  override func resignFirstResponder() -> Bool {
+    releaseIfNeeded()
+    let resigned = super.resignFirstResponder()
+    if resigned { needsDisplay = true }
+    return resigned
   }
 
   override func viewDidMoveToWindow() {
@@ -362,5 +430,9 @@ final class HoldToTalkCaptureNSView: NSView {
       NSEvent.removeMonitor(globalMouseUpMonitor)
       self.globalMouseUpMonitor = nil
     }
+  }
+
+  private func isSpaceKey(_ event: NSEvent) -> Bool {
+    event.keyCode == 49 || event.charactersIgnoringModifiers == " "
   }
 }

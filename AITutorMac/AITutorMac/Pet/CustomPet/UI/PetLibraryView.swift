@@ -187,6 +187,38 @@ struct PetLibraryView: View {
   }
 }
 
+#if DEBUG
+#Preview("Pet Library · Official and Custom") {
+  let customPet = PetModel(
+    id: "preview_custom_pet",
+    name: "我的小老师",
+    source: .userImported,
+    type: .staticImage,
+    assetLocation: PetLibraryStore.imageFileName,
+    createdAt: Date(timeIntervalSince1970: 1),
+    scale: 1
+  )
+  return VStack(spacing: AppSpacing.sm) {
+    PetLibraryRow(
+      pet: .officialFlowerBunny,
+      thumbnail: nil,
+      isCurrent: true,
+      onSelect: {},
+      onDelete: nil
+    )
+    PetLibraryRow(
+      pet: customPet,
+      thumbnail: nil,
+      isCurrent: false,
+      onSelect: {},
+      onDelete: {}
+    )
+  }
+  .frame(width: 520)
+  .padding()
+}
+#endif
+
 private struct PetLibraryRow: View {
   let pet: PetModel
   let thumbnail: NSImage?
@@ -195,7 +227,7 @@ private struct PetLibraryRow: View {
   let onDelete: (() -> Void)?
 
   var body: some View {
-    HStack(spacing: 14) {
+    HStack(spacing: AppSpacing.sm) {
       Group {
         if let thumbnail {
           Image(nsImage: thumbnail)
@@ -208,7 +240,10 @@ private struct PetLibraryRow: View {
         }
       }
       .frame(width: 62, height: 62)
-      .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 9))
+      .background(
+        .quaternary.opacity(0.45),
+        in: RoundedRectangle(cornerRadius: AppRadius.control)
+      )
 
       VStack(alignment: .leading, spacing: 4) {
         Text(pet.name)
@@ -233,13 +268,14 @@ private struct PetLibraryRow: View {
           Image(systemName: "trash")
         }
         .buttonStyle(.borderless)
+        .accessibilityLabel("删除\(pet.name)")
         .help("删除这个角色")
       }
     }
-    .padding(10)
-    .background(.background, in: RoundedRectangle(cornerRadius: 11))
+    .padding(AppSpacing.sm)
+    .background(.background, in: RoundedRectangle(cornerRadius: AppRadius.bubble))
     .overlay {
-      RoundedRectangle(cornerRadius: 11)
+      RoundedRectangle(cornerRadius: AppRadius.bubble)
         .stroke(isCurrent ? Color.accentColor.opacity(0.55) : .secondary.opacity(0.16))
     }
   }
@@ -320,8 +356,11 @@ private struct PetImportPreviewView: View {
           Text("这张图片没有检测到透明背景。继续使用时可能看到矩形背景。")
             .font(.callout)
         }
-        .padding(10)
-        .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 9))
+        .padding(AppSpacing.sm)
+        .background(
+          .orange.opacity(0.1),
+          in: RoundedRectangle(cornerRadius: AppRadius.control)
+        )
       }
 
       if prepared.validation.requiresOptimization {
