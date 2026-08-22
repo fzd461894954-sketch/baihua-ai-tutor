@@ -7,16 +7,19 @@ final class TutorDebugWindowController: NSObject, NSWindowDelegate {
   private let coordinator: TutorCoordinator
   private let realDemoController: TutorRealDemoController
   private let latencyBenchmarkController: TutorLatencyBenchmarkController
+  private let streamModelBenchmarkController: TutorStreamModelBenchmarkController
   private var window: NSWindow?
 
   init(
     coordinator: TutorCoordinator,
     realDemoController: TutorRealDemoController,
-    latencyBenchmarkController: TutorLatencyBenchmarkController
+    latencyBenchmarkController: TutorLatencyBenchmarkController,
+    streamModelBenchmarkController: TutorStreamModelBenchmarkController
   ) {
     self.coordinator = coordinator
     self.realDemoController = realDemoController
     self.latencyBenchmarkController = latencyBenchmarkController
+    self.streamModelBenchmarkController = streamModelBenchmarkController
   }
 
   func show() {
@@ -30,12 +33,14 @@ final class TutorDebugWindowController: NSObject, NSWindowDelegate {
   func stop() {
     realDemoController.shutdown()
     latencyBenchmarkController.reset()
+    streamModelBenchmarkController.reset()
     window?.orderOut(nil)
   }
 
   func windowWillClose(_ notification: Notification) {
     realDemoController.dismiss()
     latencyBenchmarkController.cancel()
+    streamModelBenchmarkController.cancel()
   }
 
   private func makeWindow() -> NSWindow {
@@ -59,9 +64,12 @@ final class TutorDebugWindowController: NSObject, NSWindowDelegate {
           .tabItem {
             Label("Real LLM Demo", systemImage: "checkmark.seal")
           }
-        TutorLatencyBenchmarkView(controller: latencyBenchmarkController)
+        TutorLatencyBenchmarkView(
+          controller: latencyBenchmarkController,
+          streamModelController: streamModelBenchmarkController
+        )
           .tabItem {
-            Label("Latency 5×", systemImage: "stopwatch")
+            Label("Latency + Stream", systemImage: "stopwatch")
           }
       }
     )

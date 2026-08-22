@@ -50,6 +50,52 @@ final class TutorRealDemoTests: XCTestCase {
     controller.shutdown()
   }
 
+  func testLiveStreamModelQualityMatrixFromSavedSettingsWhenExplicitlyEnabled() async throws {
+    guard ProcessInfo.processInfo.environment["TUTOR_PERF02_USE_KEYCHAIN"] == "1" else {
+      throw XCTSkip("TUTOR_PERF02_USE_KEYCHAIN is intentionally absent")
+    }
+
+    let providerFactory = TutorProviderFactory(
+      settingsStore: LLMProviderSettingsStore(),
+      credentialStore: KeychainCredentialStore()
+    )
+    let controller = TutorStreamModelBenchmarkController(providerFactory: providerFactory)
+    controller.selectedMode = .streaming
+    controller.candidateModelsText =
+      ProcessInfo.processInfo.environment["TUTOR_PERF02_CANDIDATE_MODEL"] ?? ""
+
+    controller.runQualityMatrix()
+    await waitForStreamModelBenchmarkTerminalState(
+      controller,
+      timeoutNanoseconds: 900_000_000_000
+    )
+
+    let expectedModelCount = controller.candidateModelsText.isEmpty ? 1 : 2
+    XCTAssertEqual(
+      controller.records.count,
+      TutorEvaluationDataset.cases.count * 2 * expectedModelCount
+    )
+    for record in controller.records {
+      let metrics = record.metrics
+      let signals = record.qualitySignals
+      print(
+        "PERF02_QUALITY case=\(record.caseID) model=\(record.model) "
+          + "format=\(record.responseFormat.rawValue) mode=\(record.mode.rawValue) "
+          + "ttfb_ms=\(milliseconds(metrics.timeToFirstByte)) "
+          + "first_event_ms=\(milliseconds(metrics.timeToFirstSSEEvent)) "
+          + "first_content_ms=\(milliseconds(metrics.timeToFirstModelContent)) "
+          + "full_ms=\(milliseconds(metrics.totalTutorLatency)) "
+          + "input_tokens=\(metrics.inputTokens.map(String.init) ?? "unavailable") "
+          + "output_tokens=\(metrics.outputTokens.map(String.init) ?? "unavailable") "
+          + "quality=\(record.qualityRating?.rawValue ?? "failed") "
+          + "unsupported_facts=\(signals?.unsupportedFacts.rawValue ?? "unavailable") "
+          + "missing_structure=\(signals?.missingStructure.rawValue ?? "unavailable") "
+          + "verbosity=\(signals?.verbosity.rawValue ?? "unavailable") "
+          + "source_alignment=\(signals?.sourceAlignment.rawValue ?? "unavailable")"
+      )
+    }
+  }
+
   func testValidJSONCompletesClosedLoopAndRecordsPrivacySafeUsage() async throws {
     let fake = FakeLLMProvider(behavior: .success)
     let provider = DecoratedTutorDemoProvider(base: fake, decoration: .usage)
@@ -278,6 +324,100 @@ final class TutorRealDemoTests: XCTestCase {
     XCTAssertEqual(generateCallCount, 5)
   }
 
+  func testStreamModelBenchmarkComparesBothModesWithSameRequest() async throws {
+    let provider = FakeLLMProvider(behavior: .success)
+    let providerFactory = BenchmarkProviderFactoryStub(provider: provider)
+    let controller = TutorStreamModelBenchmarkController(
+      providerFactory: providerFactory,
+      providerBuilder: { _ in provider }
+    )
+    controller.selectedCaseID = "api"
+    controller.responseFormat = .jsonObject
+
+    controller.runModeComparison()
+    await waitForStreamModelBenchmarkTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .completed)
+    XCTAssertEqual(controller.records.count, 10)
+    XCTAssertEqual(controller.configurationSummaries.count, 2)
+    let generateCallCount = await provider.generateCallCount
+    let streamCallCount = await provider.streamCallCount
+    XCTAssertEqual(generateCallCount, 5)
+    XCTAssertEqual(streamCallCount, 5)
+    for pairStart in stride(from: 0, to: controller.records.count, by: 2) {
+      let pair = Array(controller.records[pairStart..<(pairStart + 2)])
+      XCTAssertEqual(pair.map(\.mode), [.nonStreaming, .streaming])
+      XCTAssertEqual(Set(pair.map(\.requestID)).count, 1)
+      XCTAssertTrue(pair.allSatisfy(\.succeeded))
+      XCTAssertTrue(pair.allSatisfy { $0.qualitySignals != nil })
+    }
+  }
+
+  func testStreamModelBenchmarkRequiresConfirmedCandidateForModelComparison() {
+    let provider = FakeLLMProvider(behavior: .success)
+    let controller = TutorStreamModelBenchmarkController(
+      providerFactory: BenchmarkProviderFactoryStub(provider: provider),
+      providerBuilder: { _ in provider }
+    )
+
+    controller.runModelComparison()
+
+    XCTAssertEqual(controller.state, .failed)
+    XCTAssertTrue(controller.records.isEmpty)
+    XCTAssertNotNil(controller.failureMessage)
+  }
+
+  func testStreamModelBenchmarkUsesInMemoryCandidateWithoutChangingBaseSettings() async {
+    let provider = FakeLLMProvider(behavior: .success)
+    let factory = BenchmarkProviderFactoryStub(provider: provider)
+    let controller = TutorStreamModelBenchmarkController(
+      providerFactory: factory,
+      providerBuilder: { _ in provider }
+    )
+    controller.candidateModelsText = "confirmed-fast-model"
+    controller.selectedMode = .streaming
+    controller.responseFormat = .jsonObject
+
+    controller.runModelComparison()
+    await waitForStreamModelBenchmarkTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .completed)
+    XCTAssertEqual(controller.records.count, 10)
+    XCTAssertEqual(Set(controller.records.map(\.model)), [
+      "benchmark-model", "confirmed-fast-model",
+    ])
+    XCTAssertEqual(try? factory.configurationSnapshot().model, "benchmark-model")
+  }
+
+  func testStreamModelQualityMatrixRunsAllCasesAndBothFormats() async {
+    let provider = FakeLLMProvider(behavior: .success)
+    let controller = TutorStreamModelBenchmarkController(
+      providerFactory: BenchmarkProviderFactoryStub(provider: provider),
+      providerBuilder: { _ in provider }
+    )
+    controller.selectedMode = .streaming
+
+    controller.runQualityMatrix()
+    await waitForStreamModelBenchmarkTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .completed)
+    XCTAssertEqual(controller.records.count, TutorEvaluationDataset.cases.count * 2)
+    XCTAssertEqual(Set(controller.records.map(\.responseFormat)), [.jsonObject, .jsonSchema])
+    XCTAssertTrue(controller.records.allSatisfy { $0.qualitySignals != nil })
+    XCTAssertTrue(controller.records.allSatisfy(\.succeeded))
+  }
+
+  func testLatencyDistributionIncludesNearestRankP90() throws {
+    let distribution = try XCTUnwrap(
+      TutorLatencyDistribution(samples: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    )
+
+    XCTAssertEqual(distribution.minimum, 1)
+    XCTAssertEqual(distribution.p50, 5.5)
+    XCTAssertEqual(distribution.p90, 9)
+    XCTAssertEqual(distribution.maximum, 10)
+  }
+
   func testLatencyTraceDerivesPipelineDurationsAndNeverStoresBodies() {
     let origin = Date(timeIntervalSince1970: 10_000)
     let trace = TutorLatencyTrace(userActionAt: origin)
@@ -295,7 +435,10 @@ final class TutorRealDemoTests: XCTestCase {
       at: origin.addingTimeInterval(0.3)
     )
     trace.markHTTPStarted(at: origin.addingTimeInterval(0.4))
+    trace.markHeadersReceived(at: origin.addingTimeInterval(1.3))
     trace.markFirstResponseByte(at: origin.addingTimeInterval(1.4))
+    trace.markFirstSSEEvent(at: origin.addingTimeInterval(1.5))
+    trace.markFirstSSEContent(at: origin.addingTimeInterval(1.6))
     trace.markNetworkCompleted(at: origin.addingTimeInterval(2.4))
     trace.markDecoded(at: origin.addingTimeInterval(2.5))
     trace.markValidated(at: origin.addingTimeInterval(2.6))
@@ -314,13 +457,15 @@ final class TutorRealDemoTests: XCTestCase {
     XCTAssertEqual(metrics.promptBuildLatency ?? -1, 0.1, accuracy: 0.001)
     XCTAssertEqual(metrics.requestSetupLatency ?? -1, 0.1, accuracy: 0.001)
     XCTAssertEqual(metrics.timeToFirstByte ?? -1, 1, accuracy: 0.001)
-    XCTAssertNil(metrics.generationDuration)
+    XCTAssertEqual(metrics.timeToHeaders ?? -1, 0.9, accuracy: 0.001)
+    XCTAssertEqual(metrics.timeToFirstSSEEvent ?? -1, 1.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.timeToFirstModelContent ?? -1, 1.2, accuracy: 0.001)
+    XCTAssertEqual(metrics.generationDuration ?? -1, 0.8, accuracy: 0.001)
     XCTAssertEqual(metrics.responseTransferDuration ?? -1, 1, accuracy: 0.001)
     XCTAssertEqual(metrics.decodeLatency ?? -1, 0.1, accuracy: 0.001)
     XCTAssertEqual(metrics.validationLatency ?? -1, 0.1, accuracy: 0.001)
     XCTAssertEqual(metrics.presentationLatency ?? -1, 0.1, accuracy: 0.001)
     XCTAssertEqual(metrics.totalTutorLatency ?? -1, 2.8, accuracy: 0.001)
-    XCTAssertNil(metrics.timeToFirstModelContent)
     XCTAssertEqual(metrics.totalTokens, 150)
     XCTAssertFalse(String(reflecting: metrics).contains("PRIVATE_SOURCE_BODY"))
   }
@@ -388,6 +533,25 @@ final class TutorRealDemoTests: XCTestCase {
     if controller.state == .running {
       XCTFail("Timed out waiting for latency benchmark")
     }
+  }
+
+  private func waitForStreamModelBenchmarkTerminalState(
+    _ controller: TutorStreamModelBenchmarkController,
+    timeoutNanoseconds: UInt64 = 2_000_000_000
+  ) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+    while controller.state == .running,
+          DispatchTime.now().uptimeNanoseconds < deadline
+    {
+      try? await Task.sleep(nanoseconds: 2_000_000)
+    }
+    if controller.state == .running {
+      XCTFail("Timed out waiting for stream/model benchmark")
+    }
+  }
+
+  private func milliseconds(_ duration: TimeInterval?) -> String {
+    duration.map { String(Int(($0 * 1_000).rounded())) } ?? "unavailable"
   }
 }
 

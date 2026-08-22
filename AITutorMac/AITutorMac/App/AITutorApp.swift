@@ -50,6 +50,23 @@ struct AITutorApp: App {
         Button("Tutor Debug…") {
           appDelegate.showTutorDebug()
         }
+        .keyboardShortcut("t", modifiers: [.command, .shift])
+        Button("Run Tutor Stream Benchmark 5×") {
+          appDelegate.runTutorStreamBenchmark()
+        }
+        .keyboardShortcut("b", modifiers: [.command, .shift])
+        Button("Run Tutor Model Benchmark 5×…") {
+          appDelegate.promptAndRunTutorModelBenchmark()
+        }
+        .keyboardShortcut("m", modifiers: [.command, .shift])
+        Button("Run Tutor Format Benchmark 5×") {
+          appDelegate.runTutorFormatBenchmark()
+        }
+        .keyboardShortcut("f", modifiers: [.command, .shift])
+        Button("Run Tutor Quality Matrix") {
+          appDelegate.runTutorQualityMatrix()
+        }
+        .keyboardShortcut("q", modifiers: [.command, .shift])
         Divider()
         Button("Realtime Voice Spike…") {
           appDelegate.showRealtimeVoiceSpike()

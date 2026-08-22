@@ -118,6 +118,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 #endif
   }
 
+  @objc func runTutorStreamBenchmark() {
+#if DEBUG
+    container.tutorStreamModelBenchmarkController.runModeComparison()
+#endif
+  }
+
+  @objc func promptAndRunTutorModelBenchmark() {
+#if DEBUG
+    let alert = NSAlert()
+    alert.messageText = "Tutor Model Benchmark"
+    alert.informativeText = "输入当前 Ark 账号已确认可用的候选模型。仅保存在当前进程内存。"
+    let field = NSTextField(string: "")
+    field.placeholderString = "candidate-model-id"
+    field.frame = NSRect(x: 0, y: 0, width: 420, height: 24)
+    alert.accessoryView = field
+    alert.addButton(withTitle: "运行 5×")
+    alert.addButton(withTitle: "取消")
+    guard alert.runModal() == .alertFirstButtonReturn else { return }
+    container.tutorStreamModelBenchmarkController.candidateModelsText = field.stringValue
+    container.tutorStreamModelBenchmarkController.runModelComparison()
+#endif
+  }
+
+  @objc func runTutorFormatBenchmark() {
+#if DEBUG
+    container.tutorStreamModelBenchmarkController.runFormatComparison()
+#endif
+  }
+
+  @objc func runTutorQualityMatrix() {
+#if DEBUG
+    container.tutorStreamModelBenchmarkController.runQualityMatrix()
+#endif
+  }
+
   @objc func showRealtimeVoiceSpike() {
 #if DEBUG
     container.realtimeVoiceSpikeWindowController.show()

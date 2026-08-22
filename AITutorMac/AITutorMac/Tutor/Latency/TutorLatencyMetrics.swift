@@ -46,7 +46,9 @@ struct TutorLatencyMetrics: Equatable, Sendable {
   let requestCreatedAt: Date?
   let promptBuiltAt: Date?
   let httpStartedAt: Date?
+  let headersReceivedAt: Date?
   let firstResponseByteAt: Date?
+  let firstSSEEventAt: Date?
   let firstSSEContentAt: Date?
   let networkCompletedAt: Date?
   let decodedAt: Date?
@@ -71,12 +73,24 @@ struct TutorLatencyMetrics: Equatable, Sendable {
     duration(from: promptBuiltAt ?? requestCreatedAt, to: httpStartedAt)
   }
 
+  var requestStartedAt: Date? {
+    httpStartedAt
+  }
+
+  var timeToHeaders: TimeInterval? {
+    duration(from: httpStartedAt, to: headersReceivedAt)
+  }
+
   var timeToFirstByte: TimeInterval? {
     duration(from: httpStartedAt, to: firstResponseByteAt)
   }
 
   var timeToFirstModelContent: TimeInterval? {
     duration(from: httpStartedAt, to: firstSSEContentAt)
+  }
+
+  var timeToFirstSSEEvent: TimeInterval? {
+    duration(from: httpStartedAt, to: firstSSEEventAt)
   }
 
   var generationDuration: TimeInterval? {
@@ -123,7 +137,9 @@ final class TutorLatencyTrace: @unchecked Sendable {
     var requestCreatedAt: Date?
     var promptBuiltAt: Date?
     var httpStartedAt: Date?
+    var headersReceivedAt: Date?
     var firstResponseByteAt: Date?
+    var firstSSEEventAt: Date?
     var firstSSEContentAt: Date?
     var networkCompletedAt: Date?
     var decodedAt: Date?
@@ -182,8 +198,16 @@ final class TutorLatencyTrace: @unchecked Sendable {
     update { setOnce(&$0.httpStartedAt, date ?? now()) }
   }
 
+  func markHeadersReceived(at date: Date? = nil) {
+    update { setEarliest(&$0.headersReceivedAt, date ?? now()) }
+  }
+
   func markFirstResponseByte(at date: Date? = nil) {
     update { setEarliest(&$0.firstResponseByteAt, date ?? now()) }
+  }
+
+  func markFirstSSEEvent(at date: Date? = nil) {
+    update { setEarliest(&$0.firstSSEEventAt, date ?? now()) }
   }
 
   func markFirstSSEContent(at date: Date? = nil) {
@@ -234,7 +258,9 @@ final class TutorLatencyTrace: @unchecked Sendable {
       requestCreatedAt: value.requestCreatedAt,
       promptBuiltAt: value.promptBuiltAt,
       httpStartedAt: value.httpStartedAt,
+      headersReceivedAt: value.headersReceivedAt,
       firstResponseByteAt: value.firstResponseByteAt,
+      firstSSEEventAt: value.firstSSEEventAt,
       firstSSEContentAt: value.firstSSEContentAt,
       networkCompletedAt: value.networkCompletedAt,
       decodedAt: value.decodedAt,
@@ -298,6 +324,7 @@ struct TutorLatencyDistribution: Equatable, Sendable {
   let minimum: TimeInterval
   let p50: TimeInterval
   let median: TimeInterval
+  let p90: TimeInterval
   let maximum: TimeInterval
 
   init?(samples: [TimeInterval]) {
@@ -313,6 +340,11 @@ struct TutorLatencyDistribution: Equatable, Sendable {
     self.minimum = minimum
     p50 = median
     self.median = median
+    let p90Index = min(
+      sorted.count - 1,
+      max(0, Int(ceil(Double(sorted.count) * 0.9)) - 1)
+    )
+    p90 = sorted[p90Index]
     self.maximum = maximum
   }
 }
@@ -320,12 +352,16 @@ struct TutorLatencyDistribution: Equatable, Sendable {
 struct TutorLatencyBenchmarkSummary: Equatable, Sendable {
   let total: TutorLatencyDistribution?
   let timeToFirstByte: TutorLatencyDistribution?
+  let timeToFirstModelContent: TutorLatencyDistribution?
   let generation: TutorLatencyDistribution?
 
   init(metrics: [TutorLatencyMetrics]) {
     total = TutorLatencyDistribution(samples: metrics.compactMap(\.totalTutorLatency))
     timeToFirstByte = TutorLatencyDistribution(
       samples: metrics.compactMap(\.timeToFirstByte)
+    )
+    timeToFirstModelContent = TutorLatencyDistribution(
+      samples: metrics.compactMap(\.timeToFirstModelContent)
     )
     generation = TutorLatencyDistribution(
       samples: metrics.compactMap(\.generationDuration)

@@ -180,10 +180,13 @@ final class OpenAICompatibleProviderTests: XCTestCase {
 
     let metrics = trace.snapshot
     XCTAssertNotNil(metrics.httpStartedAt)
+    XCTAssertNotNil(metrics.headersReceivedAt)
     XCTAssertNotNil(metrics.firstResponseByteAt)
+    XCTAssertNotNil(metrics.firstSSEEventAt)
     XCTAssertNotNil(metrics.firstSSEContentAt)
     XCTAssertNotNil(metrics.networkCompletedAt)
     XCTAssertNotNil(metrics.timeToFirstModelContent)
+    XCTAssertNotNil(metrics.timeToFirstSSEEvent)
     XCTAssertNotNil(metrics.generationDuration)
     XCTAssertNotNil(metrics.responseTransferDuration)
     XCTAssertFalse(String(reflecting: metrics).contains("PRIVATE_STREAM_MARKER"))

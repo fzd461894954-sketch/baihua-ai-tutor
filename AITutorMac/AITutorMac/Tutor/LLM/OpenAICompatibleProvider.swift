@@ -610,6 +610,8 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
     didReceive response: URLResponse,
     completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
   ) {
+    latencyTrace?.markHeadersReceived()
+    latencyTrace?.markFirstResponseByte()
     guard let response = response as? HTTPURLResponse else {
       terminalError = .invalidResponse
       completionHandler(.cancel)
@@ -746,6 +748,7 @@ private final class OpenAICompatibleSSEDelegate: NSObject,
       finishSuccessfully(task: task)
       return
     }
+    latencyTrace?.markFirstSSEEvent()
     guard let data = payload.data(using: .utf8) else {
       throw LLMProviderError.decodingFailed
     }
@@ -831,6 +834,7 @@ private final class OpenAICompatibleURLSessionMetricsObserver: NSObject,
       .compactMap(\.responseStartDate)
       .min()
     if let responseStartedAt {
+      trace?.markHeadersReceived(at: responseStartedAt)
       trace?.markFirstResponseByte(at: responseStartedAt)
     }
   }
