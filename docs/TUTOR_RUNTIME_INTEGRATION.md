@@ -8,21 +8,21 @@ behavior, or Release credentials.
 
 ## Runtime path
 
-1. Accessibility Live Watch owns a UUID-scoped live session.
-2. Semantic Buffer emits a bounded stable `SemanticChunk` (maximum 1,000
-   characters under the existing Tutor contract).
-3. `CurrentExplainableContentProvider` replaces its single in-memory current
-   chunk only when the chunk belongs to that active session.
-4. The user presses **解释当前内容** in Tutor Panel.
-5. `TutorManualRuntimeController` shows loading immediately, resolves the current
-   chunk, validates the Debug model configuration, and asks `TutorCoordinator`
-   for a `.userInitiated` explanation.
+1. The user presses **解释当前内容** or submits a question in the teacher card.
+2. `TutorManualRuntimeController` creates an on-demand UUID-scoped session when
+   no Accessibility Live Watch session is active.
+3. `AccessibilitySnapshotController` performs one bounded read against the last
+   external application. This explicit read does not require continuous watch.
+4. `CurrentExplainableContentProvider` converts that fresh snapshot into one
+   bounded `SemanticChunk` owned by the active session.
+5. `TutorManualRuntimeController` validates the model configuration and asks
+   `TutorCoordinator` for a `.userInitiated` explanation.
 6. `OpenAICompatibleProvider` produces a validated `TutorResponse`, which is
    mapped to `TutorPresentationModel` and routed to Tutor Panel.
 
-Semantic Buffer never calls a Tutor engine by itself. Low-confidence content is
-still rejected for automatic admission, but a user may explicitly request its
-explanation.
+Accessibility Live Watch and Semantic Buffer remain optional and never call a
+Tutor engine by themselves. An explicit user action always attempts a fresh
+snapshot so observer startup or notification failures do not block explanation.
 
 ## Session and cancellation ownership
 
@@ -61,13 +61,12 @@ content.
 ## Manual real E2E procedure
 
 1. Open ChatGPT or Codex and make it the last external application.
-2. In Accessibility Debug, start Live Watch and wait for a stable semantic chunk.
-3. In Tutor Debug > Real LLM Demo, enter a valid endpoint, model, and API key.
+2. In Tutor Debug > Real LLM Demo, enter a valid endpoint, model, and API key.
    Leave that Debug window open so its in-memory configuration remains available.
-4. Open Tutor Panel and press **解释当前内容**.
-5. Confirm loading appears immediately and a real `TutorPresentationModel`
+3. Open Tutor Panel and press **解释当前内容** without starting Live Watch.
+4. Confirm loading appears immediately and a real `TutorPresentationModel`
    lesson replaces it.
-6. Repeat with a changed ChatGPT/Codex response, double-click/retry, Live Watch
+5. Repeat with a changed ChatGPT/Codex response, double-click/retry, Live Watch
    stop, and a new live session. Confirm no request is started before a user
    action and no old-session result is presented.
 

@@ -45,8 +45,11 @@ Microphone buffers are streamed from `AVAudioEngine` to Apple's Speech framework
 in memory. The app creates no `.wav`, `.m4a`, `.caf`, `.mp3`, or other audio file.
 
 Partial and final transcripts are kept only in memory for the current interaction.
-After recognition finishes, the final transcript is submitted as the learner's
-question to the currently configured AI model provider. The app does not save a
+After recognition finishes, the app explicitly reads the last external window
+and submits its bounded visible-text excerpt together with the final transcript
+to the currently configured AI model provider. If the external window cannot be
+read, the app shows an error instead of silently pretending it saw that content.
+The app does not save a
 speech history, database record, or transcript log. OSLog messages contain
 lifecycle and permission outcomes only, never the words spoken by the user.
 

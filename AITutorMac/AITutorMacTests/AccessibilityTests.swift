@@ -261,10 +261,47 @@ final class AccessibilityTests: XCTestCase {
     XCTAssertNil(controller.snapshot)
   }
 
+  func testExplicitResolveReadsExternalTargetWithoutLiveSession() async throws {
+    let context = contextWithExternalApplication()
+    let target = try XCTUnwrap(context.lastExternalApplication)
+    let expectedSnapshot = AccessibleTextSnapshot(
+      window: AccessibleWindowSnapshot(
+        application: AccessibleApplicationSnapshot(
+          appName: target.localizedName,
+          bundleIdentifier: target.bundleIdentifier,
+          processIdentifier: target.processIdentifier,
+          observedAt: Date(),
+          source: .accessibility
+        ),
+        windowTitle: "ChatGPT",
+        windowRole: "AXWindow",
+        windowSubrole: "AXStandardWindow",
+        observedAt: Date(),
+        source: .accessibility
+      ),
+      nodes: [],
+      plainText: "当前 ChatGPT 回答",
+      characterCount: 12,
+      nodeCount: 0,
+      visitedNodeCount: 1,
+      roleCounts: [:],
+      truncated: false,
+      duration: 0.01
+    )
+    let reader = SuccessfulAccessibilitySnapshotReader(snapshot: expectedSnapshot)
+    let controller = makeController(context: context, reader: reader)
+
+    let snapshot = try await controller.resolveSnapshot(target: target)
+
+    XCTAssertEqual(snapshot, expectedSnapshot)
+    XCTAssertEqual(reader.callCount, 1)
+    XCTAssertFalse(controller.isReading)
+  }
+
   private func makeController(
     context: ContextState,
     authorization: AccessibilityAuthorizationController? = nil,
-    reader: MockAccessibilitySnapshotReader,
+    reader: any AccessibilitySnapshotReading,
     resolver: MockRunningApplicationResolver? = nil,
     selfProcessIdentifier: @escaping () -> pid_t = {
       ProcessInfo.processInfo.processIdentifier
@@ -371,6 +408,29 @@ private final class MockAccessibilitySnapshotReader: AccessibilitySnapshotReadin
     }
     try cancellationToken.checkCancellation()
     throw AccessibilityReaderError.readFailed
+  }
+}
+
+private final class SuccessfulAccessibilitySnapshotReader: AccessibilitySnapshotReading {
+  private let lock = NSLock()
+  private let snapshot: AccessibleTextSnapshot
+  private var storedCallCount = 0
+
+  var callCount: Int {
+    lock.withLock { storedCallCount }
+  }
+
+  init(snapshot: AccessibleTextSnapshot) {
+    self.snapshot = snapshot
+  }
+
+  func readSnapshot(
+    target: ActiveApplicationSnapshot,
+    cancellationToken: AccessibilityReadCancellationToken
+  ) throws -> AccessibleTextSnapshot {
+    lock.withLock { storedCallCount += 1 }
+    try cancellationToken.checkCancellation()
+    return snapshot
   }
 }
 

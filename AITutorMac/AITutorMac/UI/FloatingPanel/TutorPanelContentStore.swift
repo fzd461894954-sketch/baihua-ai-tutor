@@ -22,14 +22,20 @@ enum TutorPanelActionAvailability: Equatable, Sendable {
 
 struct TutorPanelErrorPresentation: Equatable, Sendable {
   static let noStableContent = TutorPanelErrorPresentation(
-    title: "还没有可解释的内容",
-    message: "我现在还没有检测到可以解释的新内容。"
+    title: "没有读到当前窗口内容",
+    message: "请先切回要解释的应用，保持内容窗口打开，然后再试一次。"
   )
 
   static let modelNotConfigured = TutorPanelErrorPresentation(
     title: "还没有配置教学模型",
     message: "请先在 AI 模型设置中配置模型服务。",
     recoveryAction: .openModelSettings
+  )
+
+  static let accessibilityPermissionRequired = TutorPanelErrorPresentation(
+    title: "需要重新开启辅助功能权限",
+    message: "请在系统设置中将 AITutorMac 的辅助功能权限关闭后重新开启，然后回到目标应用再试一次。",
+    recoveryAction: .openAccessibilitySettings
   )
 
   static let requestFailed = TutorPanelErrorPresentation(
@@ -60,6 +66,7 @@ struct TutorPanelErrorPresentation: Equatable, Sendable {
 enum TutorPanelErrorRecoveryAction: Equatable, Sendable {
   case retry
   case openModelSettings
+  case openAccessibilitySettings
 }
 
 enum TutorPanelState: Equatable, Sendable {

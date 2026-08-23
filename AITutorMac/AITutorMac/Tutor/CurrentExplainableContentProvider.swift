@@ -256,7 +256,9 @@ final class CurrentExplainableContentProvider: TutorCurrentContentProviding {
     let contentNodeText = snapshot.nodes.compactMap { node -> String? in
       guard
         !excludedControlRoles.contains(node.role ?? ""),
-        node.sourceAttribute == .title || node.sourceAttribute == .value,
+        node.sourceAttribute == .title
+          || node.sourceAttribute == .value
+          || node.sourceAttribute == .accessibilityDescription,
         hasVisibleText(node.text)
       else {
         return nil

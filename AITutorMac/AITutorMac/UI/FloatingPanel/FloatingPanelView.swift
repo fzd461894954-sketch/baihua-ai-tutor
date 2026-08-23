@@ -46,6 +46,10 @@ struct FloatingPanelView: View {
       if availability.isAvailable {
         Button("解释当前内容") { actionHandler.handle(.explainCurrentContent) }
           .buttonStyle(.borderedProminent)
+        Label("点击解释或提问时，会自动读取刚才使用的窗口。", systemImage: "viewfinder")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .textSelection(.enabled)
       } else {
         Button("打开 AI 模型设置") { actionHandler.handle(.openModelSettings) }
           .buttonStyle(.borderedProminent)
@@ -119,6 +123,11 @@ struct FloatingPanelView: View {
         case .openModelSettings:
           Button("打开 AI 模型设置") { actionHandler.handle(.openModelSettings) }
             .buttonStyle(.borderedProminent)
+        case .openAccessibilitySettings:
+          Button("打开辅助功能设置") {
+            actionHandler.handle(.openAccessibilitySettings)
+          }
+          .buttonStyle(.borderedProminent)
         }
         Button("稍后再说") { actionHandler.handle(.dismissCurrentPresentation) }
       }

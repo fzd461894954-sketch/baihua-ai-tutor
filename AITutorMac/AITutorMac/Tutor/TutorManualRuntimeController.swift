@@ -136,7 +136,7 @@ final class TutorManualRuntimeController {
       contentStore.clear()
       router.clearTutorNotification()
       state = .idle
-    case .openModelSettings:
+    case .openModelSettings, .openAccessibilitySettings:
       break
     case .playTutorVoice, .stopTutorVoice:
       break
@@ -155,7 +155,7 @@ final class TutorManualRuntimeController {
       return
     }
     if activeSessionID == nil {
-      beginQuestionSession()
+      beginOnDemandSession()
     }
     explainCurrentContent(question: String(normalized))
   }
@@ -175,6 +175,9 @@ final class TutorManualRuntimeController {
   }
 
   private func explainCurrentContent(question: String? = nil) {
+    if activeSessionID == nil {
+      beginOnDemandSession()
+    }
     let latencyTrace = TutorLatencyTrace()
     activeLatencyTrace = latencyTrace
     latestLatencyMetrics = nil
@@ -197,8 +200,8 @@ final class TutorManualRuntimeController {
         let chunk: SemanticChunk
         do {
           chunk = try await self.resolveCurrentContent()
-        } catch {
-          guard let question else {
+        } catch let error as CurrentExplainableContentError {
+          guard error == .noStableContent, let question else {
             throw error
           }
           chunk = SemanticChunk(
@@ -239,7 +242,11 @@ final class TutorManualRuntimeController {
           return
         }
         self.actionTask = nil
-        self.router.routeError(.noStableContent, origin: .userInitiated)
+        let presentation: TutorPanelErrorPresentation =
+          (error as? AccessibilityReaderError) == .permissionRequired
+            ? .accessibilityPermissionRequired
+            : .noStableContent
+        self.router.routeError(presentation, origin: .userInitiated)
         self.latestLatencyMetrics = latencyTrace.snapshot
         self.activeLatencyTrace = nil
         self.requestedChunkID = nil
@@ -248,14 +255,14 @@ final class TutorManualRuntimeController {
     }
   }
 
-  private func beginQuestionSession() {
+  private func beginOnDemandSession() {
     let sessionID = UUID()
     activeSessionID = sessionID
     contentProvider.beginSession(sessionID)
     coordinator.startSession(sessionID)
     router.activateSession(sessionID)
     AppLogger.tutorRuntime.info(
-      "Tutor question session started session=\(sessionID.uuidString, privacy: .public)"
+      "Tutor on-demand session started session=\(sessionID.uuidString, privacy: .public)"
     )
   }
 

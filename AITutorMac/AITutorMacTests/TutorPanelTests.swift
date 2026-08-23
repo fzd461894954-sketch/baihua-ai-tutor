@@ -74,6 +74,7 @@ final class TutorPanelTests: XCTestCase {
     handler.handle(.explainCurrentContent)
     handler.handle(.retryCurrentContent)
     handler.handle(.dismissCurrentPresentation)
+    handler.handle(.openAccessibilitySettings)
     handler.handle(.playTutorVoice(TutorPanelPresentationFixtures.apiLesson))
     handler.handle(.stopTutorVoice)
 
@@ -81,6 +82,7 @@ final class TutorPanelTests: XCTestCase {
       .explainCurrentContent,
       .retryCurrentContent,
       .dismissCurrentPresentation,
+      .openAccessibilitySettings,
       .playTutorVoice(TutorPanelPresentationFixtures.apiLesson),
       .stopTutorVoice,
     ])

@@ -130,6 +130,32 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     XCTAssertEqual(chunk.flushReason, .manualFlush)
   }
 
+  func testCurrentSnapshotKeepsChatGPTAccessibilityDescriptions() throws {
+    let provider = CurrentExplainableContentProvider()
+    let sessionID = UUID()
+    provider.beginSession(sessionID)
+    let snapshot = makeSnapshot(
+      plainText: "Transformer 会根据上下文预测下一个 token。",
+      nodes: [
+        AccessibleTextNode(
+          role: "AXStaticText",
+          text: "Transformer 会根据上下文预测下一个 token。",
+          depth: 4,
+          sourceAttribute: .accessibilityDescription
+        ),
+      ]
+    )
+
+    XCTAssertEqual(
+      provider.receiveCurrentSnapshot(snapshot, revisionID: 5, sessionID: sessionID),
+      .accepted
+    )
+    XCTAssertEqual(
+      try provider.currentSemanticChunk().text,
+      "Transformer 会根据上下文预测下一个 token。"
+    )
+  }
+
   func testCurrentSnapshotExcerptRemainsBoundedToTutorLimit() throws {
     let provider = CurrentExplainableContentProvider(maximumCharacterCount: 100)
     let sessionID = UUID()
@@ -196,6 +222,30 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     XCTAssertEqual(runtime.store.state, .error(.noStableContent))
     let callCount = await provider.generateCallCount
     XCTAssertEqual(callCount, 0)
+  }
+
+  func testExplainWithoutLiveSessionUsesOnDemandContentResolver() async {
+    let provider = FakeLLMProvider()
+    let resolvedChunk = makeChunk(text: "ChatGPT 当前显示的回答。", revisionID: 9)
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: provider),
+      resolveCurrentContent: { resolvedChunk }
+    )
+
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually {
+      if case .presentation = runtime.store.state { return true }
+      return false
+    }
+
+    XCTAssertNotNil(runtime.controller.activeSessionID)
+    XCTAssertEqual(runtime.coordinator.latestRequest?.source.text, resolvedChunk.text)
+    XCTAssertEqual(
+      runtime.coordinator.latestRequest?.source.sourceRevisionID,
+      resolvedChunk.sourceRevisionID
+    )
+    let generateCallCount = await provider.generateCallCount
+    XCTAssertEqual(generateCallCount, 1)
   }
 
   func testExplainImmediatelyLoadsThenRoutesSuccessfulPresentation() async {
@@ -294,6 +344,37 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
       runtime.coordinator.latestRequest?.source.text,
       "用生活例子解释一下 API。"
     )
+  }
+
+  func testQuestionDoesNotSilentlyIgnoreAccessibilityReadFailure() async {
+    let provider = FakeLLMProvider()
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: provider),
+      resolveCurrentContent: { throw AccessibilityReaderError.readFailed }
+    )
+
+    runtime.controller.askQuestion("解释一下当前 ChatGPT 的回答。")
+    await eventually { runtime.store.state == .error(.noStableContent) }
+
+    XCTAssertNil(runtime.coordinator.latestRequest)
+    let generateCallCount = await provider.generateCallCount
+    XCTAssertEqual(generateCallCount, 0)
+  }
+
+  func testPermissionFailureShowsAccessibilityRecovery() async {
+    let provider = FakeLLMProvider()
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: provider),
+      resolveCurrentContent: { throw AccessibilityReaderError.permissionRequired }
+    )
+
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually {
+      runtime.store.state == .error(.accessibilityPermissionRequired)
+    }
+
+    let generateCallCount = await provider.generateCallCount
+    XCTAssertEqual(generateCallCount, 0)
   }
 
   func testSnapshotResolutionFailureDoesNotSendOldChunk() async {

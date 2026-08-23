@@ -177,27 +177,38 @@ final class AppContainer {
         tutorProviderFactory?.isAvailable() == true
       },
       resolveCurrentContent: {
-        [weak accessibilityLiveMonitor, weak currentContentProvider] in
-        guard let currentContentProvider else {
+        [weak accessibilitySnapshotController, weak contextState,
+         weak currentContentProvider] in
+        guard
+          let accessibilitySnapshotController,
+          let contextState,
+          let currentContentProvider
+        else {
           throw CurrentExplainableContentError.noStableContent
         }
-        guard
-          let accessibilityLiveMonitor,
-          let sessionID = currentContentProvider.activeSessionID
-        else {
-          return try currentContentProvider.currentSemanticChunk()
+        guard let target = contextState.lastExternalApplication else {
+          AppLogger.accessibility.error(
+            "Explicit Tutor snapshot failed error=noLastExternalApplication"
+          )
+          throw CurrentExplainableContentError.noStableContent
+        }
+        guard let sessionID = currentContentProvider.activeSessionID else {
+          AppLogger.accessibility.error(
+            "Explicit Tutor snapshot failed error=noActiveTutorSession"
+          )
+          throw CurrentExplainableContentError.noStableContent
         }
 
-        let snapshot = try await accessibilityLiveMonitor.resolveCurrentSnapshot()
-        let revisionID = accessibilityLiveMonitor.contextRevisionPipeline
-          .latestRevision?.revisionID ?? 0
+        let snapshot = try await accessibilitySnapshotController.resolveSnapshot(
+          target: target
+        )
         let result = currentContentProvider.receiveCurrentSnapshot(
           snapshot,
-          revisionID: revisionID,
+          revisionID: 0,
           sessionID: sessionID
         )
         guard result == .accepted else {
-          throw CurrentExplainableContentError.noStableContent
+          throw AccessibilityReaderError.readFailed
         }
         return try currentContentProvider.currentSemanticChunk()
       }
@@ -232,13 +243,15 @@ final class AppContainer {
     )
     tutorPanelActionHandler = TutorPanelActionHandler {
       [fixtureController, weak tutorManualRuntimeController, weak aiModelSettingsWindowController,
-       weak tutorVoiceCoordinator]
+       weak accessibilitySnapshotController, weak tutorVoiceCoordinator]
       intent in
       switch intent {
       case .showDebugFixture:
         fixtureController.handle(intent)
       case .openModelSettings:
         aiModelSettingsWindowController?.show()
+      case .openAccessibilitySettings:
+        accessibilitySnapshotController?.authorizationController.openSystemSettings()
       case let .playTutorVoice(presentation):
         tutorVoiceCoordinator?.play(presentation)
       case .stopTutorVoice:
@@ -250,11 +263,13 @@ final class AppContainer {
 #else
     tutorPanelActionHandler = TutorPanelActionHandler {
       [weak tutorManualRuntimeController, weak aiModelSettingsWindowController,
-       weak tutorVoiceCoordinator]
+       weak accessibilitySnapshotController, weak tutorVoiceCoordinator]
       intent in
       switch intent {
       case .openModelSettings:
         aiModelSettingsWindowController?.show()
+      case .openAccessibilitySettings:
+        accessibilitySnapshotController?.authorizationController.openSystemSettings()
       case let .playTutorVoice(presentation):
         tutorVoiceCoordinator?.play(presentation)
       case .stopTutorVoice:

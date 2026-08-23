@@ -5,6 +5,7 @@ enum TutorPanelActionIntent: Equatable, Sendable {
   case retryCurrentContent
   case dismissCurrentPresentation
   case openModelSettings
+  case openAccessibilitySettings
   case playTutorVoice(TutorPresentationModel)
   case stopTutorVoice
 #if DEBUG

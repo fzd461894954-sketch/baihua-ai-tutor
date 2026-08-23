@@ -50,8 +50,8 @@ struct MenuBarContentView: View {
     Text("当前应用：\(contextState.userContextApplication?.displayName ?? "未检测到")")
 
     if accessibilitySnapshotController.authorizationController.permissionState == .granted {
-      Text("内容跟随：\(accessibilityLiveMonitor.state.displayName)")
-      Button("开始跟随当前应用") {
+      Text("持续跟随（可选）：\(accessibilityLiveMonitor.state.displayName)")
+      Button("开始持续跟随当前应用") {
         accessibilityLiveMonitor.start()
       }
       .disabled(accessibilityLiveMonitor.isLiveSessionActive)

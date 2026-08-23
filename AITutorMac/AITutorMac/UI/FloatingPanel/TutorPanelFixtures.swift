@@ -201,7 +201,7 @@ final class TutorPanelDebugFixtureController {
       presentationTask?.cancel()
       presentationTask = nil
       contentStore.clear()
-    case .openModelSettings:
+    case .openModelSettings, .openAccessibilitySettings:
       break
     case .playTutorVoice, .stopTutorVoice:
       break

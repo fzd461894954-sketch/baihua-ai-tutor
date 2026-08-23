@@ -199,6 +199,55 @@ final class AccessibilitySnapshotController: LiveSnapshotRequesting {
     return true
   }
 
+  /// Reads the explicitly requested external application once, independently
+  /// of whether continuous AX following is enabled. A user-initiated read
+  /// supersedes an in-flight preview/live read but does not retarget or stop
+  /// the continuous observer session that owns that read.
+  func resolveSnapshot(
+    target: ActiveApplicationSnapshot
+  ) async throws -> AccessibleTextSnapshot {
+    authorizationController.refreshState()
+    guard authorizationController.permissionState == .granted else {
+      logExplicitReadFailure(.permissionRequired, target: target)
+      throw AccessibilityReaderError.permissionRequired
+    }
+    guard !isSelfTarget(target) else {
+      logExplicitReadFailure(.selfTargetRejected, target: target)
+      throw AccessibilityReaderError.selfTargetRejected
+    }
+    guard applicationResolver.isAvailable(target) else {
+      logExplicitReadFailure(.targetUnavailable, target: target)
+      throw AccessibilityReaderError.targetUnavailable
+    }
+
+    if isReading {
+      cancelCurrentRead()
+    }
+
+    return try await withCheckedThrowingContinuation { continuation in
+      let didStart = requestLiveRead(target: target) { result in
+        if case let .failure(error) = result {
+          self.logExplicitReadFailure(error, target: target)
+        }
+        continuation.resume(with: result)
+      }
+      guard !didStart else {
+        return
+      }
+
+      authorizationController.refreshState()
+      if authorizationController.permissionState != .granted {
+        continuation.resume(throwing: AccessibilityReaderError.permissionRequired)
+      } else if isSelfTarget(target) {
+        continuation.resume(throwing: AccessibilityReaderError.selfTargetRejected)
+      } else if !applicationResolver.isAvailable(target) {
+        continuation.resume(throwing: AccessibilityReaderError.targetUnavailable)
+      } else {
+        continuation.resume(throwing: AccessibilityReaderError.readFailed)
+      }
+    }
+  }
+
   func cancelLiveRead() {
     guard case .live = activeRequestKind else {
       return
@@ -290,6 +339,16 @@ final class AccessibilitySnapshotController: LiveSnapshotRequesting {
   private func isSelfTarget(_ target: ActiveApplicationSnapshot) -> Bool {
     target.bundleIdentifier == selfBundleIdentifier()
       || target.processIdentifier == selfProcessIdentifier()
+  }
+
+  private func logExplicitReadFailure(
+    _ error: AccessibilityReaderError,
+    target: ActiveApplicationSnapshot
+  ) {
+    let bundleIdentifier = target.bundleIdentifier ?? "<nil>"
+    AppLogger.accessibility.error(
+      "Explicit AX snapshot failed targetBundle=\(bundleIdentifier, privacy: .public) targetPID=\(target.processIdentifier, privacy: .public) error=\(error.rawValue, privacy: .public)"
+    )
   }
 
   private func complete(
