@@ -8,6 +8,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     static let tutorSize = NSSize(width: 290, height: 132)
     static let actionSize = NSSize(width: 330, height: 230)
     static let unreadActionSize = NSSize(width: 350, height: 310)
+    static let companionSize = NSSize(width: 420, height: 640)
     static let gap: CGFloat = 8
   }
 
@@ -19,7 +20,11 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   private let stateController: PetStateController
   private let speechInputController: SpeechInputController
   private let tutorNotificationCenter: TutorPetNotificationCenter
+  private let tutorContentStore: TutorPanelContentStore?
+  private let tutorActionHandler: TutorPanelActionHandler?
+  private let tutorVoiceCoordinator: TutorVoiceCoordinator?
   private let animationController: PetAnimationController
+  private let onAskQuestion: (String) -> Void
   private let onOpenTutor: () -> Void
   private let onScaleChange: (String, Double) -> Void
 
@@ -41,7 +46,11 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     stateController: PetStateController,
     speechInputController: SpeechInputController,
     tutorNotificationCenter: TutorPetNotificationCenter,
+    tutorContentStore: TutorPanelContentStore? = nil,
+    tutorActionHandler: TutorPanelActionHandler? = nil,
+    tutorVoiceCoordinator: TutorVoiceCoordinator? = nil,
     animationController: PetAnimationController? = nil,
+    onAskQuestion: @escaping (String) -> Void = { _ in },
     onScaleChange: @escaping (String, Double) -> Void = { _, _ in },
     onOpenTutor: @escaping () -> Void
   ) {
@@ -53,7 +62,11 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     self.stateController = stateController
     self.speechInputController = speechInputController
     self.tutorNotificationCenter = tutorNotificationCenter
+    self.tutorContentStore = tutorContentStore
+    self.tutorActionHandler = tutorActionHandler
+    self.tutorVoiceCoordinator = tutorVoiceCoordinator
     self.animationController = animationController ?? PetAnimationController()
+    self.onAskQuestion = onAskQuestion
     self.onScaleChange = onScaleChange
     self.onOpenTutor = onOpenTutor
     scale = configuration.clampedScale(
@@ -181,6 +194,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     bubblePanel?.orderOut(nil)
     panel?.orderOut(nil)
     animationController.stopAndReset()
+    appState.isCompanionVisible = false
     appState.isPetVisible = false
 
     if installsObservers {
@@ -199,11 +213,17 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   }
 
   @objc private func openTutor() {
-    speechInputController.cancel()
-    hideWelcomeBubble()
-    if !tutorNotificationCenter.openLatestTutor() {
+    guard tutorContentStore != nil,
+          tutorActionHandler != nil,
+          tutorVoiceCoordinator != nil else {
       onOpenTutor()
+      return
     }
+    showCompanion()
+  }
+
+  func showCompanion() {
+    showActionBubble()
   }
 
   @objc private func increaseScale() {
@@ -265,11 +285,16 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   }
 
   private func handleSingleClick() {
-    showActionBubble()
+    if isActionBubbleVisible {
+      hideWelcomeBubble()
+    } else {
+      showActionBubble()
+    }
   }
 
   private func showBubble(_ content: PetBubble) {
-    guard !speechInputController.isInteractionActive,
+    guard !isActionBubbleVisible,
+          !speechInputController.isInteractionActive,
           appState.isPetVisible,
           let panel,
           panel.isVisible else {
@@ -279,6 +304,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     let bubble = bubblePanel ?? makeBubblePanel(content: content)
     bubblePanel = bubble
     isActionBubbleVisible = false
+    appState.isCompanionVisible = false
     bubble.title = ""
     bubble.ignoresMouseEvents = true
     bubble.setContent(
@@ -317,20 +343,36 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     let bubble = bubblePanel ?? makeBubblePanel(content: .welcome)
     bubblePanel = bubble
     isActionBubbleVisible = true
-    bubble.title = "语音操作"
+    appState.isCompanionVisible = true
+    tutorNotificationCenter.markRead()
+    bubble.title = "花花老师"
     bubble.ignoresMouseEvents = false
-    bubble.setContent(
-      PushToTalkBubbleView(
-        speechInputController: speechInputController,
-        tutorNotification: tutorNotification,
-        onOpenTutor: { [weak self] in
-          self?.openTutor()
-        }
-      ),
-      size: tutorNotification == nil
-        ? BubbleLayout.actionSize
-        : BubbleLayout.unreadActionSize
-    )
+    if let tutorContentStore, let tutorActionHandler, let tutorVoiceCoordinator {
+      bubble.setContent(
+        TutorCompanionBubbleView(
+          contentStore: tutorContentStore,
+          actionHandler: tutorActionHandler,
+          tutorVoiceCoordinator: tutorVoiceCoordinator,
+          speechInputController: speechInputController,
+          onAskQuestion: onAskQuestion,
+          onClose: { [weak self] in
+            self?.hideWelcomeBubble()
+          }
+        ),
+        size: BubbleLayout.companionSize
+      )
+    } else {
+      bubble.setContent(
+        PushToTalkBubbleView(
+          speechInputController: speechInputController,
+          tutorNotification: tutorNotification,
+          onOpenTutor: { [weak self] in self?.onOpenTutor() }
+        ),
+        size: tutorNotification == nil
+          ? BubbleLayout.actionSize
+          : BubbleLayout.unreadActionSize
+      )
+    }
     positionBubbleIfNeeded()
     NSApplication.shared.activate(ignoringOtherApps: true)
     bubble.makeKeyAndOrderFront(nil)
@@ -348,6 +390,7 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     bubbleDismissTask?.cancel()
     bubbleDismissTask = nil
     isActionBubbleVisible = false
+    appState.isCompanionVisible = false
     bubblePanel?.orderOut(nil)
   }
 
@@ -387,16 +430,32 @@ final class PetWindowController: NSObject, NSWindowDelegate {
       return
     }
 
-    var origin = NSPoint(
+    let above = NSPoint(
       x: petFrame.midX - bubbleSize.width / 2,
       y: petFrame.maxY + BubbleLayout.gap
     )
-
-    if origin.y + bubbleSize.height > visibleFrame.maxY {
-      origin.y = petFrame.minY - bubbleSize.height - BubbleLayout.gap
-    }
-
-    origin = configuration.clampedOrigin(origin, size: bubbleSize, in: visibleFrame)
+    let below = NSPoint(
+      x: petFrame.midX - bubbleSize.width / 2,
+      y: petFrame.minY - bubbleSize.height - BubbleLayout.gap
+    )
+    let left = NSPoint(
+      x: petFrame.minX - bubbleSize.width - BubbleLayout.gap,
+      y: petFrame.midY - bubbleSize.height / 2
+    )
+    let right = NSPoint(
+      x: petFrame.maxX + BubbleLayout.gap,
+      y: petFrame.midY - bubbleSize.height / 2
+    )
+    let candidates = bubbleSize.height > 400
+      ? [left, right, above, below]
+      : [above, below, left, right]
+    let origin = candidates.first {
+      visibleFrame.contains(NSRect(origin: $0, size: bubbleSize))
+    } ?? configuration.clampedOrigin(
+      candidates[0],
+      size: bubbleSize,
+      in: visibleFrame
+    )
     bubblePanel.setFrameOrigin(origin)
   }
 
@@ -422,9 +481,6 @@ final class PetWindowController: NSObject, NSWindowDelegate {
     interactionView.onSingleClick = { [weak self] in
       self?.handleSingleClick()
     }
-    interactionView.onDoubleClick = { [weak self] in
-      self?.openTutor()
-    }
     interactionView.onDragBegan = { [weak self] in
       AppLogger.pet.debug("Pet drag began")
       self?.speechInputController.cancel()
@@ -445,13 +501,13 @@ final class PetWindowController: NSObject, NSWindowDelegate {
   private func makeContextMenu() -> NSMenu {
     let menu = NSMenu(title: pet.name)
     menu.autoenablesItems = false
-    menu.addItem(menuItem("打开教学窗口", action: #selector(openTutor)))
+    menu.addItem(menuItem("和花花老师聊聊", action: #selector(openTutor)))
     menu.addItem(.separator())
     menu.addItem(menuItem("放大", action: #selector(increaseScale)))
     menu.addItem(menuItem("缩小", action: #selector(decreaseScale)))
     menu.addItem(menuItem("恢复默认大小", action: #selector(resetScale)))
     menu.addItem(.separator())
-    menu.addItem(menuItem("隐藏吉祥物", action: #selector(hideFromContextMenu)))
+    menu.addItem(menuItem("隐藏花花老师", action: #selector(hideFromContextMenu)))
     return menu
   }
 
@@ -512,7 +568,8 @@ extension PetWindowController: PetStateRendering {
   func prepareForStateTransition(from state: PetState) {
     hiddenTransientTask?.cancel()
     hiddenTransientTask = nil
-    if !speechInputController.isInteractionActive,
+    if !isActionBubbleVisible,
+       !speechInputController.isInteractionActive,
        tutorNotificationCenter.visibleNotification == nil {
       hideWelcomeBubble()
     }
@@ -540,7 +597,8 @@ extension PetWindowController: PetStateRendering {
 
     animationController.play(state, completion: completion)
 
-    if let bubble = PetBubble.automatic(for: state) {
+    if !isActionBubbleVisible,
+       let bubble = PetBubble.automatic(for: state) {
       tutorNotificationCenter.dismissVisiblePreservingUnread()
       showBubble(bubble)
     }
@@ -603,9 +661,8 @@ final class PetActionPanel: NSPanel {
   }
 }
 
-private final class PetInteractionView<Content: View>: NSView {
+final class PetInteractionView<Content: View>: NSView {
   var onSingleClick: (() -> Void)?
-  var onDoubleClick: (() -> Void)?
   var onDragBegan: (() -> Void)?
   var onDragEnded: ((NSPoint) -> Void)?
   var onHoverChange: ((Bool) -> Void)?
@@ -614,7 +671,6 @@ private final class PetInteractionView<Content: View>: NSView {
   private var initialMouseLocation: NSPoint?
   private var initialWindowOrigin: NSPoint?
   private var didDrag = false
-  private var singleClickWorkItem: DispatchWorkItem?
   private var hoverTrackingArea: NSTrackingArea?
 
   var animatedLayer: CALayer? {
@@ -701,7 +757,6 @@ private final class PetInteractionView<Content: View>: NSView {
 
     if !didDrag, hypot(deltaX, deltaY) >= 3 {
       didDrag = true
-      singleClickWorkItem?.cancel()
       onDragBegan?()
     }
 
@@ -731,23 +786,9 @@ private final class PetInteractionView<Content: View>: NSView {
       return
     }
 
-    if event.clickCount >= 2 {
-      singleClickWorkItem?.cancel()
-      singleClickWorkItem = nil
-      onDoubleClick?()
-      return
+    if event.clickCount == 1 {
+      onSingleClick?()
     }
-
-    let workItem = DispatchWorkItem { [weak self] in
-      self?.onSingleClick?()
-      self?.singleClickWorkItem = nil
-    }
-    singleClickWorkItem?.cancel()
-    singleClickWorkItem = workItem
-    DispatchQueue.main.asyncAfter(
-      deadline: .now() + NSEvent.doubleClickInterval,
-      execute: workItem
-    )
   }
 
   override func rightMouseDown(with event: NSEvent) {

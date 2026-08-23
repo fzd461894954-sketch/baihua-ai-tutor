@@ -159,7 +159,7 @@ final class AppContainer {
     let tutorPresentationRouter = TutorPresentationRouter(
       contentStore: tutorPanelContentStore,
       petNotificationSink: tutorPetNotificationCenter,
-      isPanelVisible: { appState.isPanelVisible }
+      isPanelVisible: { appState.isTutorVisible }
     )
     let currentContentProvider = CurrentExplainableContentProvider()
     self.currentExplainableContentProvider = currentContentProvider
@@ -175,6 +175,31 @@ final class AppContainer {
       contentStore: tutorPanelContentStore,
       prepareEngine: { [weak tutorProviderFactory] in
         tutorProviderFactory?.isAvailable() == true
+      },
+      resolveCurrentContent: {
+        [weak accessibilityLiveMonitor, weak currentContentProvider] in
+        guard let currentContentProvider else {
+          throw CurrentExplainableContentError.noStableContent
+        }
+        guard
+          let accessibilityLiveMonitor,
+          let sessionID = currentContentProvider.activeSessionID
+        else {
+          return try currentContentProvider.currentSemanticChunk()
+        }
+
+        let snapshot = try await accessibilityLiveMonitor.resolveCurrentSnapshot()
+        let revisionID = accessibilityLiveMonitor.contextRevisionPipeline
+          .latestRevision?.revisionID ?? 0
+        let result = currentContentProvider.receiveCurrentSnapshot(
+          snapshot,
+          revisionID: revisionID,
+          sessionID: sessionID
+        )
+        guard result == .accepted else {
+          throw CurrentExplainableContentError.noStableContent
+        }
+        return try currentContentProvider.currentSemanticChunk()
       }
     )
     self.tutorManualRuntimeController = tutorManualRuntimeController
@@ -298,6 +323,12 @@ final class AppContainer {
       stateController: petStateController,
       speechInputController: speechInputController,
       tutorNotificationCenter: tutorPetNotificationCenter,
+      tutorContentStore: tutorPanelContentStore,
+      tutorActionHandler: tutorPanelActionHandler,
+      tutorVoiceCoordinator: tutorVoiceCoordinator,
+      onAskQuestion: { [weak tutorManualRuntimeController] question in
+        tutorManualRuntimeController?.askQuestion(question)
+      },
       onScaleChange: { [weak petLibrary] id, scale in
         petLibrary?.updateScale(for: id, scale: scale)
       }
@@ -305,8 +336,8 @@ final class AppContainer {
       panelController?.show()
     }
     self.petWindowController = petWindowController
-    tutorPetNotificationCenter.onOpenTutor = { [weak panelController] in
-      panelController?.show()
+    tutorPetNotificationCenter.onOpenTutor = { [weak petWindowController] in
+      petWindowController?.showCompanion()
     }
     petLibraryWindowController = PetLibraryWindowController(
       library: petLibrary,

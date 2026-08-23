@@ -23,7 +23,7 @@ struct SystemAccessibilityTrustProvider: AccessibilityTrustProviding {
 @Observable
 final class AccessibilityAuthorizationController {
   static let permissionExplanation = """
-    白话 AI 使用 macOS 辅助功能权限，读取你正在使用的 AI 应用中已经显示在界面上的文字。
+    花花老师使用 macOS 辅助功能权限，读取你正在使用的 AI 应用中已经显示在界面上的文字。
 
     它不会自动点击、自动输入、修改其他 App、控制鼠标或执行任何操作。
     """

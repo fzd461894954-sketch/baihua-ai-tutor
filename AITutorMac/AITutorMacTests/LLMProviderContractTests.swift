@@ -231,6 +231,7 @@ final class LLMProviderContractTests: XCTestCase {
       createdAt: Date(timeIntervalSince1970: 4_000),
       task: .explainInPlainLanguage,
       trigger: .automatic,
+      learnerQuestion: nil,
       source: TutorSourceSnapshot(
         chunkID: chunkID,
         sourceRevisionID: sequence,

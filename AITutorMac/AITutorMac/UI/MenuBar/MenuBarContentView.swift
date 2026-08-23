@@ -46,7 +46,7 @@ struct MenuBarContentView: View {
   let stopSpeaking: () -> Void
 
   var body: some View {
-    Text("白话 AI")
+    Text("花花老师")
     Text("当前应用：\(contextState.userContextApplication?.displayName ?? "未检测到")")
 
     if accessibilitySnapshotController.authorizationController.permissionState == .granted {
@@ -70,23 +70,31 @@ struct MenuBarContentView: View {
 
     Divider()
 
-    Button("打开教学窗口") { send(.panel) }
-      .disabled(appState.isPanelVisible)
-    Button("隐藏教学窗口") { send(.panel) }
-      .disabled(!appState.isPanelVisible)
+    Button {
+      send(.panel)
+    } label: {
+      Label(
+        appState.isPanelVisible ? "隐藏独立教学窗" : "显示独立教学窗",
+        systemImage: appState.isPanelVisible ? "rectangle.slash" : "rectangle.on.rectangle"
+      )
+    }
 
     Divider()
 
-    Button("显示吉祥物") { send(.petVisibility) }
-      .disabled(appState.isPetVisible)
-    Button("隐藏吉祥物") { send(.petVisibility) }
-      .disabled(!appState.isPetVisible)
+    Button {
+      send(.petVisibility)
+    } label: {
+      Label(
+        appState.isPetVisible ? "隐藏花花老师" : "显示花花老师",
+        systemImage: appState.isPetVisible ? "eye.slash" : "eye"
+      )
+    }
 
     Divider()
 
-    Button("我的桌面老师…") { send(.petLibrary) }
-    Button("设置…") { send(.settings) }
-    Button("语音设置…") { send(.voiceSettings) }
+    Button("老师形象…") { send(.petLibrary) }
+    Button("AI 模型设置…") { send(.settings) }
+    Button("声音与麦克风…") { send(.voiceSettings) }
 
     if speechInputController.isMicrophoneActive {
       Label("正在听…", systemImage: "mic.fill")
@@ -95,7 +103,7 @@ struct MenuBarContentView: View {
 #if DEBUG
     Divider()
 
-    Text("吉祥物状态：\(petStateController.currentState.displayName)")
+    Text("花花老师状态：\(petStateController.currentState.displayName)")
 
     ContextDebugView(
       contextState: contextState,
@@ -138,7 +146,7 @@ struct MenuBarContentView: View {
 
     Divider()
 
-    Button("退出白话 AI") { send(.quit) }
+    Button("退出花花老师") { send(.quit) }
       .keyboardShortcut("q")
   }
 

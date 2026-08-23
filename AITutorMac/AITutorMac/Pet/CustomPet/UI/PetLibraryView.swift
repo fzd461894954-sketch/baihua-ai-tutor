@@ -79,7 +79,7 @@ struct PetLibraryView: View {
       )
     }
     .alert(
-      "是否从“白话 AI”中删除这个角色？",
+      "是否从“花花老师”中删除这个角色？",
       isPresented: deleteConfirmationPresented,
       presenting: deleteCandidate
     ) { pet in

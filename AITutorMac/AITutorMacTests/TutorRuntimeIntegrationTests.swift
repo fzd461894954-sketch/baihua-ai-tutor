@@ -91,6 +91,72 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     )
   }
 
+  func testCurrentSnapshotExcludesBrowserChromeAndKeepsVisibleContent() throws {
+    let provider = CurrentExplainableContentProvider()
+    let sessionID = UUID()
+    provider.beginSession(sessionID)
+    let snapshot = makeSnapshot(
+      plainText: "Back\nhttps://chatgpt.\nTransformer 会根据上下文预测下一个 token。",
+      nodes: [
+        AccessibleTextNode(
+          role: "AXButton",
+          text: "Back",
+          depth: 1,
+          sourceAttribute: .title
+        ),
+        AccessibleTextNode(
+          role: "AXTextField",
+          text: "https://chatgpt.",
+          depth: 2,
+          sourceAttribute: .value
+        ),
+        AccessibleTextNode(
+          role: "AXStaticText",
+          text: "Transformer 会根据上下文预测下一个 token。",
+          depth: 4,
+          sourceAttribute: .value
+        ),
+      ]
+    )
+
+    XCTAssertEqual(
+      provider.receiveCurrentSnapshot(snapshot, revisionID: 4, sessionID: sessionID),
+      .accepted
+    )
+    let chunk = try provider.currentSemanticChunk()
+    XCTAssertEqual(chunk.text, "Transformer 会根据上下文预测下一个 token。")
+    XCTAssertFalse(chunk.text.contains("https://chatgpt."))
+    XCTAssertFalse(chunk.text.contains("Back"))
+    XCTAssertEqual(chunk.flushReason, .manualFlush)
+  }
+
+  func testCurrentSnapshotExcerptRemainsBoundedToTutorLimit() throws {
+    let provider = CurrentExplainableContentProvider(maximumCharacterCount: 100)
+    let sessionID = UUID()
+    provider.beginSession(sessionID)
+    let content = String(repeating: "older context line\n", count: 20)
+      + "latest visible explanation"
+    let snapshot = makeSnapshot(
+      plainText: content,
+      nodes: [
+        AccessibleTextNode(
+          role: "AXStaticText",
+          text: content,
+          depth: 3,
+          sourceAttribute: .value
+        ),
+      ]
+    )
+
+    XCTAssertEqual(
+      provider.receiveCurrentSnapshot(snapshot, revisionID: 2, sessionID: sessionID),
+      .accepted
+    )
+    let chunk = try provider.currentSemanticChunk()
+    XCTAssertLessThanOrEqual(chunk.text.count, 100)
+    XCTAssertTrue(chunk.text.contains("latest visible explanation"))
+  }
+
 #if DEBUG
   func testRealDemoConfigurationIsClearedOnShutdown() {
     let configurationStore = DebugLLMConfigurationStore()
@@ -160,6 +226,95 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     XCTAssertNotNil(metrics?.panelPresentedAt)
     XCTAssertNotNil(metrics?.totalTutorLatency)
     XCTAssertNil(metrics?.firstSSEContentAt)
+  }
+
+  func testExplainUsesExplicitlyResolvedCurrentContentInsteadOfOldChunk() async {
+    let provider = FakeLLMProvider()
+    let resolvedChunk = makeChunk(text: "实际页面正文。", revisionID: 7)
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: provider),
+      resolveCurrentContent: { resolvedChunk }
+    )
+    let sessionID = UUID()
+    runtime.controller.liveSessionDidStart(sessionID)
+    runtime.controller.receive(
+      makeChunk(text: "https://chatgpt.", revisionID: 6),
+      sessionID: sessionID
+    )
+
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually {
+      if case .presentation = runtime.store.state { return true }
+      return false
+    }
+
+    XCTAssertEqual(runtime.coordinator.latestRequest?.source.text, resolvedChunk.text)
+    XCTAssertEqual(runtime.coordinator.latestRequest?.source.sourceRevisionID, 7)
+  }
+
+  func testQuestionUsesCurrentScreenContentAndReachesTutorPrompt() async {
+    let runtime = makeRuntime(engine: LLMTutorEngine(provider: FakeLLMProvider()))
+    let sessionID = UUID()
+    let chunk = makeChunk(text: "Transformer 会根据上下文预测下一个 token。")
+    runtime.controller.liveSessionDidStart(sessionID)
+    runtime.controller.receive(chunk, sessionID: sessionID)
+
+    runtime.controller.askQuestion("这里的 token 是什么意思？")
+    await eventually {
+      if case .presentation = runtime.store.state { return true }
+      return false
+    }
+
+    XCTAssertEqual(runtime.coordinator.latestRequest?.source.text, chunk.text)
+    XCTAssertEqual(
+      runtime.coordinator.latestRequest?.learnerQuestion,
+      "这里的 token 是什么意思？"
+    )
+    XCTAssertTrue(
+      runtime.coordinator.latestPromptPackage?.userContent
+        .contains("这里的 token 是什么意思？") == true
+    )
+  }
+
+  func testQuestionWorksWithoutActiveScreenSession() async {
+    let runtime = makeRuntime(engine: LLMTutorEngine(provider: FakeLLMProvider()))
+
+    runtime.controller.askQuestion("用生活例子解释一下 API。")
+    await eventually {
+      if case .presentation = runtime.store.state { return true }
+      return false
+    }
+
+    XCTAssertNotNil(runtime.controller.activeSessionID)
+    XCTAssertEqual(
+      runtime.coordinator.latestRequest?.learnerQuestion,
+      "用生活例子解释一下 API。"
+    )
+    XCTAssertEqual(
+      runtime.coordinator.latestRequest?.source.text,
+      "用生活例子解释一下 API。"
+    )
+  }
+
+  func testSnapshotResolutionFailureDoesNotSendOldChunk() async {
+    let provider = FakeLLMProvider()
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: provider),
+      resolveCurrentContent: { throw AccessibilityReaderError.readFailed }
+    )
+    let sessionID = UUID()
+    runtime.controller.liveSessionDidStart(sessionID)
+    runtime.controller.receive(
+      makeChunk(text: "https://chatgpt.", revisionID: 6),
+      sessionID: sessionID
+    )
+
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually { runtime.store.state == .error(.noStableContent) }
+
+    XCTAssertNil(runtime.coordinator.latestRequest)
+    let callCount = await provider.generateCallCount
+    XCTAssertEqual(callCount, 0)
   }
 
   func testPanelDismissAndPresentationUpdateDoNotClearCurrentContent() throws {
@@ -329,7 +484,9 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
 
   private func makeRuntime(
     engine: any TutorEngine,
-    prepareEngine: @escaping @MainActor @Sendable () async -> Bool = { true }
+    prepareEngine: @escaping @MainActor @Sendable () async -> Bool = { true },
+    resolveCurrentContent:
+      (@MainActor @Sendable () async throws -> SemanticChunk)? = nil
   ) -> RuntimeFixture {
     let store = TutorPanelContentStore(availability: .available)
     let router = TutorPresentationRouter(contentStore: store)
@@ -340,7 +497,8 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
       coordinator: coordinator,
       router: router,
       contentStore: store,
-      prepareEngine: prepareEngine
+      prepareEngine: prepareEngine,
+      resolveCurrentContent: resolveCurrentContent
     )
     return RuntimeFixture(
       store: store,
@@ -364,6 +522,36 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
       confidence: confidence,
       createdAt: createdAt,
       flushReason: .idleTimeout
+    )
+  }
+
+  private func makeSnapshot(
+    plainText: String,
+    nodes: [AccessibleTextNode]
+  ) -> AccessibleTextSnapshot {
+    AccessibleTextSnapshot(
+      window: AccessibleWindowSnapshot(
+        application: AccessibleApplicationSnapshot(
+          appName: "Chrome",
+          bundleIdentifier: "com.google.Chrome",
+          processIdentifier: 200,
+          observedAt: Date(),
+          source: .accessibility
+        ),
+        windowTitle: "ChatGPT",
+        windowRole: "AXWindow",
+        windowSubrole: "AXStandardWindow",
+        observedAt: Date(),
+        source: .accessibility
+      ),
+      nodes: nodes,
+      plainText: plainText,
+      characterCount: plainText.count,
+      nodeCount: nodes.count,
+      visitedNodeCount: nodes.count + 1,
+      roleCounts: [:],
+      truncated: false,
+      duration: 0.01
     )
   }
 

@@ -29,6 +29,7 @@ struct TutorPromptBuilder: Sendable {
     """
     You are the explanation component of a tutoring application.
     Your only task is to explain the untrusted external text supplied in userContent for the specified learner.
+    When learnerQuestion is present, answer it directly and ground the answer in the supplied source when relevant.
     Apply every constraint in order and produce only the requested structured response.
     Prompt rules version: \(PromptRules.currentVersion).
     """
@@ -39,12 +40,14 @@ struct TutorPromptBuilder: Sendable {
     let learnerLanguage = try jsonString(request.learner.preferredLanguage)
     let outputLanguage = try jsonString(request.output.language)
     let policyVersion = try jsonString(request.policyVersion)
+    let learnerQuestion = try request.learnerQuestion.map(jsonString) ?? "null"
 
     return """
     {
       "task": "\(request.task.rawValue)",
       "trigger": "\(request.trigger.rawValue)",
       "policyVersion": \(policyVersion),
+      "learnerQuestion": \(learnerQuestion),
       "source": {
         "kind": "untrustedExternalText",
         "text": \(sourceText),

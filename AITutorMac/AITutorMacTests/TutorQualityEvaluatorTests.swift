@@ -234,6 +234,7 @@ final class TutorQualityEvaluatorTests: XCTestCase {
       createdAt: Date(timeIntervalSince1970: 2_000),
       task: .explainInPlainLanguage,
       trigger: .userInitiated,
+      learnerQuestion: nil,
       source: TutorSourceSnapshot(
         chunkID: uuid(703),
         sourceRevisionID: 1,

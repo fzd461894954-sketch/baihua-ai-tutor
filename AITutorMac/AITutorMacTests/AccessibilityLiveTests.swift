@@ -347,6 +347,26 @@ final class AccessibilityLiveTests: XCTestCase {
     XCTAssertEqual(try provider.currentSemanticChunk(), chunk)
   }
 
+  func testExplicitCurrentSnapshotReadsStaticTargetWithoutAXEvent() async throws {
+    let harness = makeHarness()
+    harness.monitor.start()
+    let expected = snapshot(text: "Static content already visible before Live Watch started.")
+
+    async let resolvedSnapshot = harness.monitor.resolveCurrentSnapshot()
+    await waitFor { harness.requester.isReading }
+    harness.requester.complete(.success(expected))
+
+    let resolved = try await resolvedSnapshot
+    XCTAssertEqual(resolved, expected)
+    XCTAssertEqual(harness.requester.startCallCount, 1)
+    XCTAssertEqual(harness.monitor.eventsReceived, 0)
+    XCTAssertEqual(harness.monitor.snapshotsGenerated, 1)
+    XCTAssertEqual(
+      harness.monitor.contextRevisionPipeline.latestNormalizedText?.displayText,
+      expected.plainText
+    )
+  }
+
   private var fastConfiguration: AccessibilityLiveConfiguration {
     AccessibilityLiveConfiguration(
       minimumSnapshotInterval: 0.02,

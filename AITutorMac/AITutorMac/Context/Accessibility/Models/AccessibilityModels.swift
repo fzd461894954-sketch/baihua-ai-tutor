@@ -101,7 +101,7 @@ enum AccessibilityReaderError: String, Error, Equatable, Sendable {
     case .permissionRequired:
       return "需要开启辅助功能权限，才能读取当前窗口文字。"
     case .selfTargetRejected:
-      return "白话 AI 不会读取自己的窗口。"
+      return "花花老师不会读取自己的窗口。"
     case .targetUnavailable:
       return "刚才的应用已不可用，请切换到目标应用后再试。"
     case .focusedWindowUnavailable:

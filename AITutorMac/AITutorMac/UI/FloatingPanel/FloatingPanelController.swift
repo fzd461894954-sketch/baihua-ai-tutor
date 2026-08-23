@@ -51,7 +51,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
       defer: false
     )
 
-    panel.title = "白话 AI"
+    panel.title = "花花老师"
     panel.titleVisibility = .hidden
     panel.titlebarAppearsTransparent = true
     panel.isReleasedWhenClosed = false

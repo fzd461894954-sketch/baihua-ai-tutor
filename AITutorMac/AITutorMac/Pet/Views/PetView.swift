@@ -37,9 +37,9 @@ struct PetView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .contentShape(Rectangle())
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("桌面吉祥物，\(pet.name)")
+    .accessibilityLabel("桌面老师，\(pet.name)")
     .accessibilityValue(accessibilityValue)
-    .accessibilityHint("单击打开语音操作，双击打开教学窗口")
+    .accessibilityHint("单击展开或收起花花老师，可以直接看解释、打字或说话提问")
   }
 
   private var accessibilityValue: String {
@@ -106,7 +106,7 @@ struct PetBubble: Equatable {
 
   static let welcome = PetBubble(
     title: "你好，我是你的 AI 老师。",
-    detail: "双击我可以打开教学窗口。"
+    detail: "点一下我，就能在这里看解释或直接提问。"
   )
 
   static let understanding = PetBubble(title: "我正在理解当前内容。", detail: nil)

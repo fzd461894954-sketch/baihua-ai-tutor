@@ -94,6 +94,7 @@ struct TutorSourceSnapshot: Equatable, Sendable {
 struct TutorRequest: Equatable, Sendable {
   static let currentSchemaVersion = 1
   static let defaultMaximumSourceCharacterCount = 1_000
+  static let defaultMaximumLearnerQuestionCharacterCount = 240
 
   let schemaVersion: Int
   let id: UUID
@@ -102,6 +103,7 @@ struct TutorRequest: Equatable, Sendable {
   let createdAt: Date
   let task: TutorTask
   let trigger: TutorTrigger
+  let learnerQuestion: String?
   let source: TutorSourceSnapshot
   let learner: LearnerProfileSnapshot
   let output: TutorOutputPreferences

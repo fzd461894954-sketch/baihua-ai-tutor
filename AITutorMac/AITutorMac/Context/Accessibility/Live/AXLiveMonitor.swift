@@ -215,6 +215,64 @@ final class AccessibilityLiveMonitor {
     isLatestSnapshotVisible = false
   }
 
+  /// Resolves one fresh, bounded snapshot for the explicit Tutor action. This
+  /// never retargets the live session and falls back to the latest in-memory
+  /// snapshot only when another live read is already in flight.
+  func resolveCurrentSnapshot() async throws -> AccessibleTextSnapshot {
+    guard
+      sessionIdentifier != nil,
+      isLiveSessionActive,
+      let lockedTarget
+    else {
+      throw AccessibilityReaderError.targetUnavailable
+    }
+
+    authorizationController.refreshState()
+    guard authorizationController.permissionState == .granted else {
+      throw AccessibilityReaderError.permissionRequired
+    }
+    guard applicationResolver.isAvailable(lockedTarget) else {
+      throw AccessibilityReaderError.targetUnavailable
+    }
+
+    if snapshotRequester.isReading {
+      guard let latestSnapshot else {
+        throw AccessibilityReaderError.readFailed
+      }
+      return latestSnapshot
+    }
+
+    let expectedSessionIdentifier = sessionIdentifier
+    return try await withCheckedThrowingContinuation { continuation in
+      let didStart = snapshotRequester.requestLiveRead(target: lockedTarget) {
+        [weak self] result in
+        guard
+          let self,
+          self.sessionIdentifier == expectedSessionIdentifier
+        else {
+          continuation.resume(throwing: AccessibilityReaderError.cancelled)
+          return
+        }
+
+        switch result {
+        case let .success(snapshot):
+          self.snapshotsGenerated += 1
+          self.lastError = nil
+          self.record(snapshot)
+          continuation.resume(returning: snapshot)
+        case let .failure(error):
+          self.lastError = error
+          continuation.resume(throwing: error)
+        }
+      }
+
+      guard !didStart else {
+        return
+      }
+      continuation.resume(throwing: AccessibilityReaderError.readFailed)
+    }
+  }
+
   private func receive(_ event: AXChangeEvent, sessionIdentifier: UUID) {
     guard
       self.sessionIdentifier == sessionIdentifier,

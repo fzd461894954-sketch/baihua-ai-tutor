@@ -14,7 +14,7 @@ extension VoiceController: VoiceOutputControlling {}
 final class SpeechInputController {
   static let maximumRecordingDuration: TimeInterval = 60
   static let permissionExplanation =
-    "白话 AI 需要使用麦克风，才能听懂你对桌面老师说的话。只有你主动按住说话时才会使用麦克风。"
+    "花花老师需要使用麦克风，才能听懂你的问题。只有你点按麦克风开始说话后才会使用，结束后会把识别出的文字作为问题提交。"
 
   private(set) var state: VoiceInputState = .idle
   private(set) var permissionStatus: SpeechPermissionSnapshot
@@ -134,7 +134,7 @@ final class SpeechInputController {
 
     if status.isFullyAuthorized {
       state = .ready
-      message = "权限已开启，请再次按住说话。"
+      message = "权限已开启，请再次点按麦克风开始说话。"
     } else {
       handleDeniedAuthorization(status)
     }
@@ -153,7 +153,7 @@ final class SpeechInputController {
     isPressActive = false
     if allowed {
       state = .ready
-      message = "已允许 Apple 语音识别服务。请再次按住说话。"
+      message = "已允许 Apple 语音识别服务。请再次点按麦克风开始说话。"
     } else {
       state = .unavailable
       message = "当前语言无法完全在这台 Mac 上完成语音识别。"
@@ -395,7 +395,7 @@ final class SpeechInputController {
     state = .error
     switch failure {
     case .audioDeviceChanged, .audioInputUnavailable:
-      message = "麦克风设备已变化，请重新按住说话。"
+      message = "麦克风设备已变化，请重新点按麦克风开始说话。"
     case .networkUnavailable:
       message = "Apple 语音识别服务暂时无法连接，请检查网络后重试。"
     case .recognizerUnavailable:

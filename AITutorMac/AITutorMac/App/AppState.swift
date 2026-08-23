@@ -18,6 +18,11 @@ final class AppState {
   }
 
   var isPanelVisible = false
+  var isCompanionVisible = false
   var isPetVisible = false
+
+  var isTutorVisible: Bool {
+    isPanelVisible || isCompanionVisible
+  }
   var shellStatus: ShellStatus = .ready
 }

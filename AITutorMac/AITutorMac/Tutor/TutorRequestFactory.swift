@@ -28,6 +28,7 @@ struct TutorRequestFactory: Sendable {
     learner: LearnerProfileSnapshot,
     task: TutorTask = .explainInPlainLanguage,
     trigger: TutorTrigger = .automatic,
+    learnerQuestion: String? = nil,
     output: TutorOutputPreferences? = nil,
     policyVersion: String = TutorRequestFactory.defaultPolicyVersion
   ) throws -> TutorRequest {
@@ -55,6 +56,12 @@ struct TutorRequestFactory: Sendable {
     }
 
     let effectiveOutput = output ?? .default(language: learner.preferredLanguage)
+    let effectiveQuestion = learnerQuestion?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .prefix(TutorRequest.defaultMaximumLearnerQuestionCharacterCount)
+    let boundedQuestion = effectiveQuestion.map(String.init).flatMap {
+      Self.hasVisibleText($0) ? $0 : nil
+    }
     guard Self.hasVisibleText(effectiveOutput.language) else {
       throw TutorEngineError.invalidRequest(.emptyOutputLanguage)
     }
@@ -70,6 +77,7 @@ struct TutorRequestFactory: Sendable {
       createdAt: now(),
       task: task,
       trigger: trigger,
+      learnerQuestion: boundedQuestion,
       source: TutorSourceSnapshot(
         chunkID: chunk.id,
         sourceRevisionID: chunk.sourceRevisionID,

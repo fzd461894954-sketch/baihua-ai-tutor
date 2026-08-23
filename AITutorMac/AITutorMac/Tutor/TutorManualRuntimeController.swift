@@ -22,6 +22,8 @@ final class TutorManualRuntimeController {
   @ObservationIgnored private let router: TutorPresentationRouter
   @ObservationIgnored private let contentStore: TutorPanelContentStore
   @ObservationIgnored private let prepareEngine: @MainActor @Sendable () async -> Bool
+  @ObservationIgnored private let resolveCurrentContent:
+    @MainActor @Sendable () async throws -> SemanticChunk
   @ObservationIgnored private var actionTask: Task<Void, Never>?
   @ObservationIgnored private var actionGeneration = 0
   @ObservationIgnored private var requestedChunkID: UUID?
@@ -32,13 +34,18 @@ final class TutorManualRuntimeController {
     coordinator: TutorCoordinator,
     router: TutorPresentationRouter,
     contentStore: TutorPanelContentStore,
-    prepareEngine: @escaping @MainActor @Sendable () async -> Bool
+    prepareEngine: @escaping @MainActor @Sendable () async -> Bool,
+    resolveCurrentContent:
+      (@MainActor @Sendable () async throws -> SemanticChunk)? = nil
   ) {
     self.contentProvider = contentProvider
     self.coordinator = coordinator
     self.router = router
     self.contentStore = contentStore
     self.prepareEngine = prepareEngine
+    self.resolveCurrentContent = resolveCurrentContent ?? { [contentProvider] in
+      try contentProvider.currentSemanticChunk()
+    }
 
     coordinator.onPresentationReady = { [weak self] presentation, trigger in
       guard let self, trigger == .userInitiated else {
@@ -140,6 +147,19 @@ final class TutorManualRuntimeController {
     }
   }
 
+  func askQuestion(_ question: String) {
+    let normalized = question
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .prefix(TutorRequest.defaultMaximumLearnerQuestionCharacterCount)
+    guard !normalized.isEmpty else {
+      return
+    }
+    if activeSessionID == nil {
+      beginQuestionSession()
+    }
+    explainCurrentContent(question: String(normalized))
+  }
+
   func stop() {
     liveSessionDidEnd()
     coordinator.onPresentationReady = nil
@@ -154,7 +174,7 @@ final class TutorManualRuntimeController {
     state = .idle
   }
 
-  private func explainCurrentContent() {
+  private func explainCurrentContent(question: String? = nil) {
     let latencyTrace = TutorLatencyTrace()
     activeLatencyTrace = latencyTrace
     latestLatencyMetrics = nil
@@ -174,7 +194,23 @@ final class TutorManualRuntimeController {
         return
       }
       do {
-        let chunk = try self.contentProvider.currentSemanticChunk()
+        let chunk: SemanticChunk
+        do {
+          chunk = try await self.resolveCurrentContent()
+        } catch {
+          guard let question else {
+            throw error
+          }
+          chunk = SemanticChunk(
+            id: UUID(),
+            sourceRevisionID: 0,
+            text: question,
+            confidence: .high,
+            createdAt: Date(),
+            flushReason: .manualFlush
+          )
+        }
+        try Task.checkCancellation()
         latencyTrace.markContentResolved()
         self.requestedChunkID = chunk.id
         guard await self.prepareEngine() else {
@@ -195,6 +231,7 @@ final class TutorManualRuntimeController {
         self.actionTask = nil
         self.coordinator.requestExplanation(
           for: chunk,
+          learnerQuestion: question,
           latencyTrace: latencyTrace
         )
       } catch {
@@ -209,6 +246,17 @@ final class TutorManualRuntimeController {
         self.state = .failed
       }
     }
+  }
+
+  private func beginQuestionSession() {
+    let sessionID = UUID()
+    activeSessionID = sessionID
+    contentProvider.beginSession(sessionID)
+    coordinator.startSession(sessionID)
+    router.activateSession(sessionID)
+    AppLogger.tutorRuntime.info(
+      "Tutor question session started session=\(sessionID.uuidString, privacy: .public)"
+    )
   }
 
   private func cancelPendingWork() {

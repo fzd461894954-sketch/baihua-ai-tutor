@@ -71,9 +71,9 @@ struct BubbleChrome<Content: View>: View {
 private struct BubbleChromePreviewMatrix: View {
   var body: some View {
     VStack(spacing: AppSpacing.md) {
-      previewBubble(title: "你好，我是你的 AI 老师。", detail: "双击我可以打开教学窗口。")
+      previewBubble(title: "你好，我是花花老师。", detail: "点一下我，就能看解释或直接提问。")
       previewBubble(title: "解释已经准备好了", detail: "点按查看这次教学解释。")
-      previewBubble(title: "正在听…", detail: "按住空格键说话，松开结束。")
+      previewBubble(title: "正在听…", detail: "说完后点一下“结束并提问”。")
     }
     .frame(width: 320)
     .padding()

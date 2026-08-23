@@ -38,6 +38,19 @@ final class PromptContractTests: XCTestCase {
     XCTAssertFalse(package.systemInstruction.contains("en-US"))
   }
 
+  func testLearnerQuestionIsStructuredSeparatelyFromScreenContent() throws {
+    let question = "这里的 token 为什么不是登录令牌？"
+    let package = try TutorPromptBuilder().build(
+      from: request(learnerQuestion: question)
+    )
+    let root = try userContentObject(package)
+    let source = try XCTUnwrap(root["source"] as? [String: Any])
+
+    XCTAssertEqual(root["learnerQuestion"] as? String, question)
+    XCTAssertEqual(source["text"] as? String, "API 是程序之间约定好的接口。")
+    XCTAssertTrue(package.systemInstruction.contains("answer it directly"))
+  }
+
   func testBuilderAdaptsEveryDetailLevel() throws {
     let expectations: [(TutorDetailLevel, String)] = [
       (.concise, "Keep the explanation concise"),
@@ -211,6 +224,7 @@ final class PromptContractTests: XCTestCase {
     learnerLanguage: String = "zh-Hans",
     outputLanguage: String = "zh-Hans",
     detailLevel: TutorDetailLevel = .balanced,
+    learnerQuestion: String? = nil,
     schemaVersion: Int = TutorRequest.currentSchemaVersion
   ) -> TutorRequest {
     TutorRequest(
@@ -221,6 +235,7 @@ final class PromptContractTests: XCTestCase {
       createdAt: Date(timeIntervalSince1970: 2_000),
       task: .explainInPlainLanguage,
       trigger: .automatic,
+      learnerQuestion: learnerQuestion,
       source: TutorSourceSnapshot(
         chunkID: UUID(uuidString: "00000000-0000-0000-0000-000000000703")!,
         sourceRevisionID: 9,

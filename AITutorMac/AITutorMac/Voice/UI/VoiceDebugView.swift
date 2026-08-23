@@ -98,7 +98,7 @@ struct VoiceDebugView: View {
           Text("简体中文").tag("zh-CN")
           Text("English (US)").tag("en-US")
         }
-        Text("麦克风只会在你按住 Pet Bubble 中的“按住说话”时使用。")
+        Text("麦克风只会在你点按花花老师卡片中的麦克风按钮后使用，再次点按结束。")
           .font(.callout)
           .foregroundStyle(.secondary)
 

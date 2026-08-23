@@ -2,6 +2,265 @@ import AppKit
 import SwiftUI
 
 @MainActor
+struct TutorCompanionBubbleView: View {
+  let contentStore: TutorPanelContentStore
+  let actionHandler: TutorPanelActionHandler
+  let tutorVoiceCoordinator: TutorVoiceCoordinator
+  let speechInputController: SpeechInputController
+  let onAskQuestion: (String) -> Void
+  let onClose: () -> Void
+
+  @State private var draftQuestion = ""
+  @State private var lastQuestion = ""
+  @State private var lastSubmittedTranscript = ""
+  @FocusState private var isQuestionFieldFocused: Bool
+
+  var body: some View {
+    @Bindable var speechInputController = speechInputController
+
+    BubbleChrome {
+      VStack(spacing: 0) {
+        ZStack(alignment: .topTrailing) {
+          FloatingPanelView(
+            contentStore: contentStore,
+            actionHandler: actionHandler,
+            tutorVoiceCoordinator: tutorVoiceCoordinator
+          )
+
+          Button {
+            speechInputController.cancel()
+            onClose()
+          } label: {
+            Image(systemName: "xmark")
+              .font(.system(size: 11, weight: .semibold))
+              .frame(width: 24, height: 24)
+          }
+          .buttonStyle(.plain)
+          .background(.quaternary, in: Circle())
+          .help("收起花花老师")
+          .accessibilityLabel("收起花花老师")
+          .padding(12)
+        }
+
+        Divider()
+
+        questionComposer
+          .padding(.horizontal, AppSpacing.sm)
+          .padding(.vertical, 10)
+      }
+    }
+    .padding(AppSpacing.xxs)
+    .onChange(of: speechInputController.finalTranscript) { _, transcript in
+      submitRecognizedQuestion(transcript)
+    }
+  }
+
+  @ViewBuilder
+  private var questionComposer: some View {
+    VStack(alignment: .leading, spacing: AppSpacing.xs) {
+      if !lastQuestion.isEmpty {
+        HStack(alignment: .top, spacing: 6) {
+          Image(systemName: "person.fill")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+          Text(lastQuestion)
+            .font(.callout)
+            .lineLimit(2)
+          Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("你刚才问：\(lastQuestion)")
+      }
+
+      if speechInputController.isShowingPermissionExplanation {
+        permissionExplanation
+      } else if speechInputController.isShowingCloudConsent {
+        cloudConsent
+      } else {
+        interactionContent
+      }
+    }
+  }
+
+  private var permissionExplanation: some View {
+    VStack(alignment: .leading, spacing: 9) {
+      Label(SpeechInputController.permissionExplanation, systemImage: "mic.badge.plus")
+        .font(.footnote)
+        .fixedSize(horizontal: false, vertical: true)
+
+      HStack {
+        Button("取消") {
+          speechInputController.cancelPermissionExplanation()
+        }
+        Button("继续") {
+          Task { await speechInputController.continuePermissionRequest() }
+        }
+        .buttonStyle(.borderedProminent)
+      }
+    }
+  }
+
+  private var cloudConsent: some View {
+    VStack(alignment: .leading, spacing: 9) {
+      Text(speechInputController.message ?? "")
+        .font(.footnote)
+        .fixedSize(horizontal: false, vertical: true)
+
+      HStack {
+        Button("仅使用本机") {
+          speechInputController.chooseAppleService(allowed: false)
+        }
+        Button("允许 Apple 语音识别") {
+          speechInputController.chooseAppleService(allowed: true)
+        }
+        .buttonStyle(.borderedProminent)
+      }
+    }
+  }
+
+  private var interactionContent: some View {
+    VStack(alignment: .leading, spacing: 7) {
+      if speechInputController.state == .listening
+        || speechInputController.state == .transcribing {
+        HStack(spacing: 10) {
+          if speechInputController.state == .listening {
+            Image(systemName: "waveform")
+              .foregroundStyle(AppColors.listeningAttention)
+          } else {
+            ProgressView().controlSize(.small)
+          }
+
+          Text(activeVoiceText)
+            .font(.callout)
+            .lineLimit(2)
+          Spacer(minLength: 4)
+
+          if speechInputController.state == .listening {
+            Button("结束并提问") {
+              speechInputController.endPushToTalk()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppColors.listeningAttention)
+            .controlSize(.small)
+          }
+        }
+      } else {
+        HStack(spacing: AppSpacing.xs) {
+          TextField("问问这段内容，也可以随便聊聊…", text: $draftQuestion)
+            .textFieldStyle(.roundedBorder)
+            .focused($isQuestionFieldFocused)
+            .onSubmit(submitDraftQuestion)
+
+          Button(action: startVoiceInput) {
+            Image(systemName: "mic.fill")
+              .frame(width: 18, height: 18)
+          }
+          .buttonStyle(.bordered)
+          .disabled(!isVoiceButtonEnabled)
+          .help("点一下开始说话")
+          .accessibilityLabel("点一下开始说话")
+
+          Button(action: submitDraftQuestion) {
+            Image(systemName: "arrow.up")
+              .font(.system(size: 12, weight: .bold))
+              .frame(width: 18, height: 18)
+          }
+          .buttonStyle(.borderedProminent)
+          .disabled(normalizedDraftQuestion.isEmpty)
+          .help("提问")
+          .accessibilityLabel("提问")
+        }
+
+        if let message = statusMessage {
+          Label(message, systemImage: statusSymbol)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+        }
+
+        if speechInputController.state == .denied {
+          Button("打开系统设置") {
+            speechInputController.openSystemSettings()
+          }
+          .controlSize(.small)
+        }
+      }
+    }
+  }
+
+  private var activeVoiceText: String {
+    if speechInputController.state == .listening {
+      return speechInputController.partialTranscript.isEmpty
+        ? "正在听你说话…"
+        : speechInputController.partialTranscript
+    }
+    return "正在整理你的问题，完成后会直接提问…"
+  }
+
+  private var normalizedDraftQuestion: String {
+    draftQuestion.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  private var isVoiceButtonEnabled: Bool {
+    switch speechInputController.state {
+    case .requestingPermission, .transcribing:
+      return false
+    case .idle, .ready, .listening, .completed, .denied, .unavailable, .error:
+      return !speechInputController.isShowingCloudConsent
+    }
+  }
+
+  private var statusMessage: String? {
+    switch speechInputController.state {
+    case .denied, .unavailable, .error, .requestingPermission:
+      return speechInputController.message
+    case .idle, .ready, .listening, .transcribing, .completed:
+      return nil
+    }
+  }
+
+  private var statusSymbol: String {
+    speechInputController.state == .denied
+      ? "exclamationmark.triangle"
+      : "info.circle"
+  }
+
+  private func startVoiceInput() {
+    isQuestionFieldFocused = false
+    speechInputController.beginPushToTalk()
+  }
+
+  private func submitDraftQuestion() {
+    let question = String(
+      normalizedDraftQuestion.prefix(
+        TutorRequest.defaultMaximumLearnerQuestionCharacterCount
+      )
+    )
+    guard !question.isEmpty else { return }
+    lastQuestion = question
+    draftQuestion = ""
+    isQuestionFieldFocused = false
+    speechInputController.cancel()
+    onAskQuestion(question)
+  }
+
+  private func submitRecognizedQuestion(_ transcript: String) {
+    let question = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard
+      speechInputController.state == .completed,
+      !question.isEmpty,
+      question != lastSubmittedTranscript
+    else {
+      return
+    }
+    lastSubmittedTranscript = question
+    lastQuestion = question
+    speechInputController.clear()
+    onAskQuestion(question)
+  }
+}
+
+@MainActor
 struct PushToTalkBubbleView: View {
   let speechInputController: SpeechInputController
   let tutorNotification: PetTutorNotification?

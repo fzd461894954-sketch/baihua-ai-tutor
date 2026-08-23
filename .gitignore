@@ -25,3 +25,6 @@ API Keys/
 
 # macOS metadata
 .DS_Store
+
+# Local assistant workspace state
+.workbuddy/

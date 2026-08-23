@@ -2,34 +2,29 @@
 
 ## When the microphone is used
 
-The app uses the microphone only after the user presses and holds the “按住说话”
-control in the Pet action bubble. App launch, Pet launch, opening the action
-bubble, switching applications, and normal background operation do not start the
-microphone. There is no wake word or always-listening mode.
+The app uses the microphone only after the user clicks the microphone button in
+the teacher card. App launch, Pet launch, opening the card, switching
+applications, and normal background operation do not start the microphone.
+There is no wake word or always-listening mode.
 
-While capture is active, the user can see a microphone badge on the Pet, “正在听…”
-in the bubble, and a listening label in the menu bar.
+While capture is active, the user can see a microphone badge on the teacher,
+live partial transcript feedback in the card, and a listening label in the menu
+bar. The user clicks “结束并提问” to stop capture.
 
 ## When the microphone stops
 
-Capture stops when the user releases the button, including after dragging the
-pointer outside it. It is also stopped or cancelled when:
+Capture stops when the user clicks “结束并提问”. It is also stopped or cancelled
+when:
 
-- the hold-to-talk control or its bubble disappears;
-- the Pet is dragged or hidden;
-- the Tutor window is opened from the bubble;
+- the teacher card disappears;
+- the teacher is dragged or hidden;
 - the 60-second per-utterance limit is reached;
 - the input audio device changes or becomes unavailable;
 - recognition fails or is cancelled;
 - the app quits.
 
-Releasing the button stops microphone capture before the recognizer completes its
-final text result.
-
-While a push-to-talk gesture is active, the app temporarily observes only the
-left-mouse-up event so release outside the bubble can stop capture. The monitor is
-removed immediately on release or cancellation, records no pointer history, and
-does not request Accessibility permission.
+Clicking the end button stops microphone capture before the recognizer completes
+its final text result.
 
 ## Permissions
 
@@ -37,7 +32,7 @@ No voice permission is requested at app startup. The first active attempt shows 
 product explanation. The app requests system access only after the user chooses
 Continue:
 
-1. Microphone — to capture speech while the button is held.
+1. Microphone — to capture speech between the explicit start and end actions.
 2. Speech Recognition — to convert that actively supplied speech to text.
 
 If either permission is denied, the app identifies which permission is missing
@@ -50,9 +45,10 @@ Microphone buffers are streamed from `AVAudioEngine` to Apple's Speech framework
 in memory. The app creates no `.wav`, `.m4a`, `.caf`, `.mp3`, or other audio file.
 
 Partial and final transcripts are kept only in memory for the current interaction.
-The app does not save a speech history, database record, or transcript log. OSLog
-messages contain lifecycle and permission outcomes only, never the words spoken
-by the user.
+After recognition finishes, the final transcript is submitted as the learner's
+question to the currently configured AI model provider. The app does not save a
+speech history, database record, or transcript log. OSLog messages contain
+lifecycle and permission outcomes only, never the words spoken by the user.
 
 The only saved Voice Input preferences are whether the product explanation was
 acknowledged and whether Apple service recognition was explicitly allowed. They
@@ -73,8 +69,10 @@ falls back to network processing. Choosing “允许 Apple 语音识别” recor
 preference and allows Speech framework to use Apple's service according to the
 system service's availability and Apple's policies.
 
-This application does not send the transcript to Tutor Engine, an AI provider, or
-any third-party STT SDK in STEP 1.8B.
+The app sends audio only through Apple's Speech framework according to the choice
+above. The configured AI model provider receives the final transcript as text,
+not the microphone audio. The teacher card discloses that teaching content is
+sent to the configured model service.
 
 ## Teacher speech arbitration
 

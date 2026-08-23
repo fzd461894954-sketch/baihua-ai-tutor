@@ -5,7 +5,7 @@ struct AITutorApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
   var body: some Scene {
-    MenuBarExtra("白话 AI", systemImage: "sparkles") {
+    MenuBarExtra("花花老师", systemImage: "sparkles") {
       MenuBarContentView(
         appState: appDelegate.appState,
         contextState: appDelegate.contextState,

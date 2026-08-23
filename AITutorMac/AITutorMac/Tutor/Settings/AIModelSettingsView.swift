@@ -297,7 +297,7 @@ struct AIModelSettingsView: View {
       Button("删除", role: .destructive) { controller.deleteConfiguration() }
       Button("取消", role: .cancel) {}
     } message: {
-      Text("这会删除 AI 模型设置和 Keychain 中的 API Key，不会影响吉祥物、Context 或语音设置。")
+      Text("这会删除 AI 模型设置和 Keychain 中的 API Key，不会影响老师形象、内容跟随或语音设置。")
     }
   }
 
@@ -318,7 +318,7 @@ struct AIModelSettingsView: View {
       Label("隐私说明", systemImage: "lock.shield")
         .font(.headline)
       Text("当你主动请求解释时，需要解释的当前文本会发送给你配置的 AI 模型服务。")
-      Text("白话 AI 不会把完整屏幕自动上传给模型。")
+      Text("花花老师不会把完整屏幕自动上传给模型。")
     }
     .font(.footnote)
     .foregroundStyle(.secondary)

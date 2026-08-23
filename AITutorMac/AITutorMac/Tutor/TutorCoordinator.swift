@@ -209,6 +209,7 @@ final class TutorCoordinator {
   /// admission and duplicate suppression while retaining session ownership.
   func requestExplanation(
     for chunk: SemanticChunk,
+    learnerQuestion: String? = nil,
     latencyTrace: TutorLatencyTrace? = nil
   ) {
     guard let sessionID = currentSessionID else {
@@ -226,6 +227,7 @@ final class TutorCoordinator {
       for: chunk,
       trigger: .userInitiated,
       sessionID: sessionID,
+      learnerQuestion: learnerQuestion,
       latencyTrace: latencyTrace
     )
   }
@@ -234,6 +236,7 @@ final class TutorCoordinator {
     for chunk: SemanticChunk,
     trigger: TutorTrigger,
     sessionID: UUID,
+    learnerQuestion: String? = nil,
     latencyTrace suppliedTrace: TutorLatencyTrace? = nil
   ) {
     cancelActiveTask()
@@ -252,6 +255,7 @@ final class TutorCoordinator {
         sequence: nextSequence,
         learner: learner,
         trigger: trigger,
+        learnerQuestion: learnerQuestion,
         output: output
       )
       latencyTrace.markRequestCreated(requestID: request.id)

@@ -154,6 +154,33 @@ final class CurrentExplainableContentProvider: TutorCurrentContentProviding {
     return .accepted
   }
 
+  /// Converts the current Accessibility snapshot into one bounded, generic
+  /// content excerpt for an explicit user request. Browser chrome and control
+  /// descriptions are excluded without adding app-specific parsing rules.
+  @discardableResult
+  func receiveCurrentSnapshot(
+    _ snapshot: AccessibleTextSnapshot,
+    revisionID: Int,
+    sessionID: UUID,
+    createdAt: Date = Date()
+  ) -> CurrentExplainableContentReceiveResult {
+    let text = Self.boundedContentText(
+      from: snapshot,
+      maximumCharacterCount: maximumCharacterCount
+    )
+    return receive(
+      SemanticChunk(
+        id: UUID(),
+        sourceRevisionID: revisionID,
+        text: text,
+        confidence: .high,
+        createdAt: createdAt,
+        flushReason: .manualFlush
+      ),
+      sessionID: sessionID
+    )
+  }
+
   func invalidateSession(
     _ sessionID: UUID? = nil,
     reason: CurrentExplainableContentInvalidationReason = .liveSessionEnded
@@ -221,6 +248,58 @@ final class CurrentExplainableContentProvider: TutorCurrentContentProviding {
   private static func hasVisibleText(_ text: String) -> Bool {
     text.contains(where: { !$0.isWhitespace })
   }
+
+  private static func boundedContentText(
+    from snapshot: AccessibleTextSnapshot,
+    maximumCharacterCount: Int
+  ) -> String {
+    let contentNodeText = snapshot.nodes.compactMap { node -> String? in
+      guard
+        !excludedControlRoles.contains(node.role ?? ""),
+        node.sourceAttribute == .title || node.sourceAttribute == .value,
+        hasVisibleText(node.text)
+      else {
+        return nil
+      }
+      return node.text
+    }
+    let candidate = contentNodeText.isEmpty
+      ? snapshot.plainText
+      : contentNodeText.joined(separator: "\n")
+    let normalized = TextNormalizer().normalize(candidate).displayText
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard normalized.count > maximumCharacterCount else {
+      return normalized
+    }
+
+    let suffix = String(normalized.suffix(maximumCharacterCount))
+    guard
+      let firstLineBreak = suffix.firstIndex(of: "\n"),
+      firstLineBreak < suffix.index(before: suffix.endIndex)
+    else {
+      return suffix
+    }
+    let afterFirstLine = suffix[suffix.index(after: firstLineBreak)...]
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    return afterFirstLine.count >= maximumCharacterCount / 2
+      ? afterFirstLine
+      : suffix
+  }
+
+  private static let excludedControlRoles: Set<String> = [
+    "AXButton",
+    "AXCheckBox",
+    "AXComboBox",
+    "AXImage",
+    "AXMenuItem",
+    "AXPopUpButton",
+    "AXRadioButton",
+    "AXSecureTextField",
+    "AXTab",
+    "AXTextField",
+    "AXToolbar",
+  ]
 
   private func recordRetrieval(
     _ result: CurrentExplainableContentRetrievalResult,
