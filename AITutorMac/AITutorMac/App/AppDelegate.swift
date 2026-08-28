@@ -45,6 +45,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       automaticTerminationReason
     )
     container.start()
+#if DEBUG
+    if ProcessInfo.processInfo.arguments.contains("--show-tutor-debug") {
+      NSApplication.shared.setActivationPolicy(.regular)
+      showTutorDebug()
+    }
+#endif
     AppLogger.lifecycle.info("App launched")
   }
 

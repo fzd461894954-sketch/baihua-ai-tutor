@@ -34,17 +34,46 @@ struct AXAccessibilitySnapshotReader: AccessibilitySnapshotReading {
     let application = try applicationReader.readApplication(target)
     try cancellationToken.checkCancellation()
 
+#if DEBUG
+    AXReadTraceStore.shared.setStage(.windowMetadata)
+#endif
     let window = try windowReader.readWindow(
       application: application.application,
       element: application.focusedWindow
     )
-    let text = try textExtractor.extract(
-      from: application.focusedWindow,
-      cancellationToken: cancellationToken
+#if DEBUG
+    AXReadTraceStore.shared.record(
+      stage: .windowMetadata,
+      outcome: .pass,
+      operation: "assemble-focused-window-metadata",
+      detail: "title=\(window.windowTitle == nil ? "unavailable" : "available") role=\(window.windowRole ?? "unavailable") subrole=\(window.windowSubrole ?? "unavailable")"
     )
+#endif
+    let windowFrame = try? application.focusedWindow.elementFrame()
+#if DEBUG
+    AXReadTraceStore.shared.setStage(.treeTraversal)
+#endif
+    let text = try textExtractor.extract(
+      from: application.contentRoot,
+      cancellationToken: cancellationToken,
+      sourceApplication: application.application,
+      sourceWindow: window,
+      windowFrame: windowFrame
+    )
+#if DEBUG
+    AXReadTraceStore.shared.record(
+      stage: .textExtraction,
+      outcome: .pass,
+      operation: "extract-structured-text",
+      detail: "nodes=\(text.nodes.count) visited=\(text.visitedNodeCount) characters=\(text.plainText.count) truncated=\(text.truncated)"
+    )
+#endif
     try cancellationToken.checkCancellation()
 
-    return AccessibleTextSnapshot(
+#if DEBUG
+    AXReadTraceStore.shared.setStage(.snapshotAssembly)
+#endif
+    let snapshot = AccessibleTextSnapshot(
       window: window,
       nodes: text.nodes,
       plainText: text.plainText,
@@ -55,6 +84,15 @@ struct AXAccessibilitySnapshotReader: AccessibilitySnapshotReading {
       truncated: text.truncated,
       duration: CFAbsoluteTimeGetCurrent() - startedAt
     )
+#if DEBUG
+    AXReadTraceStore.shared.record(
+      stage: .snapshotAssembly,
+      outcome: .pass,
+      operation: "assemble-accessible-text-snapshot",
+      detail: "nodes=\(snapshot.nodeCount) characters=\(snapshot.characterCount)"
+    )
+#endif
+    return snapshot
   }
 }
 
@@ -310,6 +348,14 @@ final class AccessibilitySnapshotController: LiveSnapshotRequesting {
   }
 
   private func beginRead(target: ActiveApplicationSnapshot, kind: ReadRequestKind) {
+#if DEBUG
+    AXReadTraceStore.shared.begin(
+      target: target,
+      resolvedBundleIdentifier: NSRunningApplication(
+        processIdentifier: target.processIdentifier
+      )?.bundleIdentifier
+    )
+#endif
     let requestID = UUID()
     let token = AccessibilityReadCancellationToken()
     activeRequestID = requestID
@@ -360,6 +406,9 @@ final class AccessibilitySnapshotController: LiveSnapshotRequesting {
     }
     let requestKind = activeRequestKind
     finish(requestID: requestID)
+#if DEBUG
+    AXReadTraceStore.shared.finish(result: "READY")
+#endif
 
     switch requestKind {
     case .manual:
@@ -385,6 +434,9 @@ final class AccessibilitySnapshotController: LiveSnapshotRequesting {
 
     let requestKind = activeRequestKind
     finish(requestID: requestID)
+#if DEBUG
+    AXReadTraceStore.shared.finish(result: "FAILED · \(error.rawValue)")
+#endif
 
     switch requestKind {
     case .manual:

@@ -31,6 +31,7 @@ final class AppContainer {
   let tutorManualRuntimeController: TutorManualRuntimeController
 #if DEBUG
   let tutorCoordinator: TutorCoordinator
+  let tutorDebugTraceStore: TutorDebugTraceStore
   let tutorDebugWindowController: TutorDebugWindowController
   let debugLLMConfigurationStore: DebugLLMConfigurationStore
   let tutorLatencyBenchmarkController: TutorLatencyBenchmarkController
@@ -46,6 +47,7 @@ final class AppContainer {
   private var petStateStressTask: Task<Void, Never>?
   private var voiceStressTask: Task<Void, Never>?
   private var debugAutoExitTask: Task<Void, Never>?
+  private var tutorAXConsoleCaptureTask: Task<Void, Never>?
 #endif
 
   init(appState: AppState, contextState: ContextState) {
@@ -97,6 +99,8 @@ final class AppContainer {
     )
     self.aiModelSettingsWindowController = aiModelSettingsWindowController
 #if DEBUG
+    let tutorDebugTraceStore = TutorDebugTraceStore()
+    self.tutorDebugTraceStore = tutorDebugTraceStore
     let tutorCoordinator = TutorCoordinator(
       engine: LLMTutorEngine(provider: FakeLLMProvider())
     )
@@ -116,6 +120,7 @@ final class AppContainer {
     self.tutorStreamModelBenchmarkController = tutorStreamModelBenchmarkController
     let tutorDebugWindowController = TutorDebugWindowController(
       coordinator: tutorCoordinator,
+      traceStore: tutorDebugTraceStore,
       realDemoController: realDemoController,
       latencyBenchmarkController: tutorLatencyBenchmarkController,
       streamModelBenchmarkController: tutorStreamModelBenchmarkController
@@ -163,18 +168,80 @@ final class AppContainer {
     )
     let currentContentProvider = CurrentExplainableContentProvider()
     self.currentExplainableContentProvider = currentContentProvider
-    let productionTutorEngine = ProductionTutorEngine(
-      providerFactory: tutorProviderFactory
+    let usesTutorAXConsoleCaptureProvider: Bool
+    let tutorAXConsoleCaptureTarget: ActiveApplicationSnapshot?
+    let tutorPanelCoordinator: TutorCoordinator
+#if DEBUG
+    usesTutorAXConsoleCaptureProvider = ProcessInfo.processInfo.arguments.contains(
+      "--tutor-ax-console-capture"
     )
-    let tutorPanelCoordinator = TutorCoordinator(engine: productionTutorEngine)
+    let targetBundlePrefix = "--tutor-ax-console-target-bundle="
+    tutorAXConsoleCaptureTarget = ProcessInfo.processInfo.arguments
+      .first(where: { $0.hasPrefix(targetBundlePrefix) })
+      .map { String($0.dropFirst(targetBundlePrefix.count)) }
+      .flatMap { bundleIdentifier in
+        NSRunningApplication.runningApplications(
+          withBundleIdentifier: bundleIdentifier
+        ).first(where: { !$0.isTerminated })
+      }
+      .map { application in
+        ActiveApplicationSnapshot(
+          localizedName: application.localizedName,
+          bundleIdentifier: application.bundleIdentifier,
+          processIdentifier: application.processIdentifier,
+          observedAt: Date()
+        )
+      }
+    if usesTutorAXConsoleCaptureProvider {
+      let provider = OpenAICompatibleProvider(
+        endpoint: URL(string: "http://127.0.0.1:1/chat/completions")!,
+        model: "debug-request-assembly",
+        apiKey: "debug-non-secret-placeholder",
+        responseFormat: .jsonObject,
+        requestTimeout: 0.25
+      )
+      tutorPanelCoordinator = TutorCoordinator(
+        engine: LLMTutorEngine(provider: provider)
+      )
+    } else {
+      tutorPanelCoordinator = TutorCoordinator(
+        engine: ProductionTutorEngine(providerFactory: tutorProviderFactory)
+      )
+    }
+#else
+    usesTutorAXConsoleCaptureProvider = false
+    tutorAXConsoleCaptureTarget = nil
+    tutorPanelCoordinator = TutorCoordinator(
+      engine: ProductionTutorEngine(providerFactory: tutorProviderFactory)
+    )
+#endif
     self.tutorPanelCoordinator = tutorPanelCoordinator
+#if DEBUG
+    tutorPanelCoordinator.debugConversationModeProvider = { [weak tutorDebugTraceStore] in
+      tutorDebugTraceStore?.currentTurnOnly == true
+        ? .currentTurnOnly
+        : .normalContext
+    }
+    tutorPanelCoordinator.onDebugRequestStarted = {
+      [weak tutorDebugTraceStore] request, prompt, _ in
+      tutorDebugTraceStore?.recordRequest(request, prompt: prompt)
+    }
+    tutorPanelCoordinator.onDebugRequestFinished = {
+      [weak tutorDebugTraceStore] requestID, metrics, exchange in
+      tutorDebugTraceStore?.recordCompletion(
+        requestID: requestID,
+        metrics: metrics,
+        exchange: exchange
+      )
+    }
+#endif
     let tutorManualRuntimeController = TutorManualRuntimeController(
       contentProvider: currentContentProvider,
       coordinator: tutorPanelCoordinator,
       router: tutorPresentationRouter,
       contentStore: tutorPanelContentStore,
       prepareEngine: { [weak tutorProviderFactory] in
-        tutorProviderFactory?.isAvailable() == true
+        usesTutorAXConsoleCaptureProvider || tutorProviderFactory?.isAvailable() == true
       },
       resolveCurrentContent: {
         [weak accessibilitySnapshotController, weak contextState,
@@ -186,7 +253,8 @@ final class AppContainer {
         else {
           throw CurrentExplainableContentError.noStableContent
         }
-        guard let target = contextState.lastExternalApplication else {
+        guard let target = tutorAXConsoleCaptureTarget
+          ?? contextState.lastExternalApplication else {
           AppLogger.accessibility.error(
             "Explicit Tutor snapshot failed error=noLastExternalApplication"
           )
@@ -207,17 +275,40 @@ final class AppContainer {
           revisionID: 0,
           sessionID: sessionID
         )
+        if result == .rejected(.ambiguousContent) {
+#if DEBUG
+          if let selection = currentContentProvider.latestContentSelection {
+            tutorDebugTraceStore.recordBlockedManualSnapshot(
+              snapshot,
+              selection: selection,
+              revisionID: 0
+            )
+          }
+#endif
+          throw CurrentExplainableContentError.ambiguousContent
+        }
         guard result == .accepted else {
           throw AccessibilityReaderError.readFailed
         }
-        return try currentContentProvider.currentSemanticChunk()
+        let chunk = try currentContentProvider.currentSemanticChunk()
+#if DEBUG
+        tutorDebugTraceStore.recordManualSnapshot(
+          snapshot,
+          selection: currentContentProvider.latestContentSelection,
+          chunk: chunk
+        )
+#endif
+        return chunk
       }
     )
     self.tutorManualRuntimeController = tutorManualRuntimeController
 
     let petStateController = PetStateController()
     self.petStateController = petStateController
-    let voiceController = VoiceController(petStateController: petStateController)
+    let voiceController = VoiceController(
+      petStateController: petStateController,
+      synthesizer: HybridSpeechSynthesizer()
+    )
     self.voiceController = voiceController
     let speechInputController = SpeechInputController(
       authorizationController: SpeechAuthorizationController(),
@@ -290,6 +381,14 @@ final class AppContainer {
         tutorManualRuntimeController?.liveSessionDidEnd()
       }
     }
+#if DEBUG
+    contextRevisionPipeline.onDebugSnapshot = { [weak tutorDebugTraceStore] snapshot in
+      tutorDebugTraceStore?.recordPipeline(snapshot)
+    }
+    semanticBuffer.onDebugEvent = { [weak tutorDebugTraceStore] event in
+      tutorDebugTraceStore?.recordBuffer(event)
+    }
+#endif
     semanticBuffer.onChunk = { [weak tutorManualRuntimeController] chunk in
       guard let sessionID = tutorManualRuntimeController?.activeSessionID else {
         AppLogger.tutorRuntime.notice(
@@ -373,6 +472,7 @@ final class AppContainer {
     activeApplicationMonitor.start()
     panelController.create()
     petWindowController.start()
+    voiceController.prepareLocalService()
 
     let registered = hotKeyManager.registerOptionSpace { [weak self] in
       AppLogger.hotKey.info("Global shortcut triggered")
@@ -387,6 +487,7 @@ final class AppContainer {
 #if DEBUG
     tutorCoordinator.start()
     realtimeVoiceLifecycleMonitor.start()
+    startTutorAXConsoleCaptureIfRequested()
     applyPetStateDebugArgumentIfRequested()
     startPetStateStressTestIfRequested()
     applyVoiceDebugArgumentIfRequested()
@@ -397,6 +498,10 @@ final class AppContainer {
 
   func stop() {
     semanticBuffer.onChunk = nil
+#if DEBUG
+    semanticBuffer.onDebugEvent = nil
+    contextRevisionPipeline.onDebugSnapshot = nil
+#endif
     accessibilityLiveMonitor.onLiveSessionChange = nil
     tutorManualRuntimeController.stop()
     tutorPanelCoordinator.stop()
@@ -404,6 +509,8 @@ final class AppContainer {
     tutorCoordinator.stop()
     tutorDebugWindowController.stop()
     realtimeVoiceLifecycleMonitor.stop()
+    tutorAXConsoleCaptureTask?.cancel()
+    tutorAXConsoleCaptureTask = nil
 #endif
     accessibilityDebugWindowController.stop()
     accessibilityLiveMonitor.stop()
@@ -420,6 +527,7 @@ final class AppContainer {
     speechInputController.cancel()
     tutorVoiceCoordinator.shutdown()
     voiceController.stop()
+    voiceController.shutdownLocalService()
     hotKeyManager.unregister()
     aiModelSettingsWindowController.stop()
     voiceSettingsWindowController.stop()
@@ -443,6 +551,71 @@ final class AppContainer {
 #endif
 
 #if DEBUG
+  private func startTutorAXConsoleCaptureIfRequested() {
+    guard ProcessInfo.processInfo.arguments.contains("--tutor-ax-console-capture") else {
+      return
+    }
+
+    tutorAXConsoleCaptureTask = Task { [weak self] in
+      do {
+        try await Task.sleep(nanoseconds: 500_000_000)
+      } catch {
+        return
+      }
+      guard let self else {
+        return
+      }
+
+      tutorManualRuntimeController.handle(.explainCurrentContent)
+      for _ in 0..<80 {
+        do {
+          try await Task.sleep(nanoseconds: 50_000_000)
+        } catch {
+          return
+        }
+        if let report = tutorDebugTraceStore.completedConsoleReport() {
+          print(
+            report
+              + "\n"
+              + AXReadTraceStore.shared.consoleReport()
+              + "\nUSER FACING RESULT\n"
+              + tutorAXConsoleUIReport()
+          )
+          fflush(stdout)
+          NSApplication.shared.terminate(nil)
+          return
+        }
+      }
+
+      print(
+        tutorDebugTraceStore.incompleteConsoleReport()
+          + "\n"
+          + AXReadTraceStore.shared.consoleReport()
+          + "\nUSER FACING RESULT\n"
+          + tutorAXConsoleUIReport()
+      )
+      fflush(stdout)
+      NSApplication.shared.terminate(nil)
+    }
+  }
+
+  private func tutorAXConsoleUIReport() -> String {
+    switch tutorPanelContentStore.state {
+    case let .error(error):
+      return [
+        "state=error",
+        "title=\(error.title)",
+        "message=\(error.message)",
+      ].joined(separator: "\n")
+    case .loading:
+      return "state=loading"
+    case .presentation:
+      return "state=presentation"
+    case .empty:
+      return "state=empty"
+    }
+  }
+
   private func applyPetStateDebugArgumentIfRequested() {
     let prefix = "--pet-state="
     guard

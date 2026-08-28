@@ -20,10 +20,52 @@ enum AccessibleSnapshotSource: String, Equatable, Sendable {
 }
 
 enum AccessibilityTextSourceAttribute: String, Equatable, Sendable {
+  case selectedText
   case title
   case value
   case accessibilityDescription = "description"
   case help
+}
+
+struct AccessibleFrameSnapshot: Equatable, Sendable {
+  let x: Double
+  let y: Double
+  let width: Double
+  let height: Double
+
+  init(_ frame: CGRect) {
+    x = frame.origin.x
+    y = frame.origin.y
+    width = frame.size.width
+    height = frame.size.height
+  }
+
+  var cgRect: CGRect {
+    CGRect(x: x, y: y, width: width, height: height)
+  }
+
+  var debugDescription: String {
+    String(format: "x=%.1f y=%.1f w=%.1f h=%.1f", x, y, width, height)
+  }
+}
+
+enum AccessibleWindowGeometryRelationship: String, Equatable, Sendable {
+  case containedInWindow = "contained-in-window"
+  case intersectsWindow = "intersects-window"
+  case outsideWindow = "outside-window"
+  case unknown
+}
+
+struct AccessibleNodePathComponent: Equatable, Sendable {
+  let debugNodeID: String
+  let role: String?
+  let subrole: String?
+  let identifier: String?
+  let traversalIndex: Int
+  let childIndex: Int
+  let frame: AccessibleFrameSnapshot?
+  let isFocused: Bool?
+  let isSelected: Bool?
 }
 
 struct AccessibleApplicationSnapshot: Equatable, Sendable {
@@ -44,10 +86,82 @@ struct AccessibleWindowSnapshot: Equatable, Sendable {
 }
 
 struct AccessibleTextNode: Equatable, Sendable {
+  let debugNodeID: String
+  let fingerprint: String
   let role: String?
+  let subrole: String?
+  let identifier: String?
+  let elementTitle: String?
+  let elementDescription: String?
   let text: String
+  let rawText: String
   let depth: Int
+  let traversalIndex: Int
+  let parentDebugNodeID: String?
+  let ancestorPath: [AccessibleNodePathComponent]
+  let frame: AccessibleFrameSnapshot?
+  let isFocused: Bool?
+  let isSelected: Bool?
+  let isEnabled: Bool?
+  let isVisible: Bool?
+  let windowGeometryRelationship: AccessibleWindowGeometryRelationship
+  let sourceApplication: String?
+  let sourceBundleIdentifier: String?
+  let sourceProcessIdentifier: pid_t?
+  let sourceWindowIdentity: String?
   let sourceAttribute: AccessibilityTextSourceAttribute
+
+  init(
+    role: String?,
+    text: String,
+    depth: Int,
+    sourceAttribute: AccessibilityTextSourceAttribute,
+    debugNodeID: String = "legacy-node",
+    fingerprint: String = "legacy-node",
+    subrole: String? = nil,
+    identifier: String? = nil,
+    elementTitle: String? = nil,
+    elementDescription: String? = nil,
+    rawText: String? = nil,
+    traversalIndex: Int = 0,
+    parentDebugNodeID: String? = nil,
+    ancestorPath: [AccessibleNodePathComponent] = [],
+    frame: AccessibleFrameSnapshot? = nil,
+    isFocused: Bool? = nil,
+    isSelected: Bool? = nil,
+    isEnabled: Bool? = nil,
+    isVisible: Bool? = nil,
+    windowGeometryRelationship: AccessibleWindowGeometryRelationship = .unknown,
+    sourceApplication: String? = nil,
+    sourceBundleIdentifier: String? = nil,
+    sourceProcessIdentifier: pid_t? = nil,
+    sourceWindowIdentity: String? = nil
+  ) {
+    self.debugNodeID = debugNodeID
+    self.fingerprint = fingerprint
+    self.role = role
+    self.subrole = subrole
+    self.identifier = identifier
+    self.elementTitle = elementTitle
+    self.elementDescription = elementDescription
+    self.text = text
+    self.rawText = rawText ?? text
+    self.depth = depth
+    self.traversalIndex = traversalIndex
+    self.parentDebugNodeID = parentDebugNodeID
+    self.ancestorPath = ancestorPath
+    self.frame = frame
+    self.isFocused = isFocused
+    self.isSelected = isSelected
+    self.isEnabled = isEnabled
+    self.isVisible = isVisible
+    self.windowGeometryRelationship = windowGeometryRelationship
+    self.sourceApplication = sourceApplication
+    self.sourceBundleIdentifier = sourceBundleIdentifier
+    self.sourceProcessIdentifier = sourceProcessIdentifier
+    self.sourceWindowIdentity = sourceWindowIdentity
+    self.sourceAttribute = sourceAttribute
+  }
 }
 
 struct AccessibleTextSnapshot: Equatable, Sendable {

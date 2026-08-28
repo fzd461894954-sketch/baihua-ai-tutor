@@ -242,10 +242,14 @@ final class TutorManualRuntimeController {
           return
         }
         self.actionTask = nil
-        let presentation: TutorPanelErrorPresentation =
-          (error as? AccessibilityReaderError) == .permissionRequired
-            ? .accessibilityPermissionRequired
-            : .noStableContent
+        let presentation: TutorPanelErrorPresentation
+        if (error as? CurrentExplainableContentError) == .ambiguousContent {
+          presentation = .ambiguousContent
+        } else if (error as? AccessibilityReaderError) == .permissionRequired {
+          presentation = .accessibilityPermissionRequired
+        } else {
+          presentation = .noStableContent
+        }
         self.router.routeError(presentation, origin: .userInitiated)
         self.latestLatencyMetrics = latencyTrace.snapshot
         self.activeLatencyTrace = nil

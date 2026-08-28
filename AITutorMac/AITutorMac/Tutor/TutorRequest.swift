@@ -76,6 +76,25 @@ struct TutorSourceSnapshot: Equatable, Sendable {
   let diffConfidence: DiffConfidence
   let flushReason: SemanticFlushReason
   let chunkCreatedAt: Date
+  let contentLength: SemanticContentLengthMetadata
+
+  init(
+    chunkID: UUID,
+    sourceRevisionID: Int,
+    text: String,
+    diffConfidence: DiffConfidence,
+    flushReason: SemanticFlushReason,
+    chunkCreatedAt: Date,
+    contentLength: SemanticContentLengthMetadata? = nil
+  ) {
+    self.chunkID = chunkID
+    self.sourceRevisionID = sourceRevisionID
+    self.text = text
+    self.diffConfidence = diffConfidence
+    self.flushReason = flushReason
+    self.chunkCreatedAt = chunkCreatedAt
+    self.contentLength = contentLength ?? .complete(characterCount: text.count)
+  }
 
   var completeness: TutorSourceCompleteness {
     switch flushReason {
@@ -93,7 +112,9 @@ struct TutorSourceSnapshot: Equatable, Sendable {
 
 struct TutorRequest: Equatable, Sendable {
   static let currentSchemaVersion = 1
-  static let defaultMaximumSourceCharacterCount = 1_000
+  /// A complete medium-sized code example must fit without suffix truncation.
+  /// The value remains bounded to limit screen-text exposure and prompt size.
+  static let defaultMaximumSourceCharacterCount = 4_000
   static let defaultMaximumLearnerQuestionCharacterCount = 240
 
   let schemaVersion: Int

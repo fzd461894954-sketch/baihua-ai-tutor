@@ -36,9 +36,21 @@ enum PromptRules {
       "Write the teaching content using the language tag in outputPreferences.language. Preserve code, identifiers, and literal values when translation would change them.",
       detailRule(for: request.output.detailLevel),
       optionalSectionRule(for: request.output),
-      "If the source is incomplete or does not support a reliable explanation, use needsMoreContext instead of guessing.",
+      "Use needsMoreContext only when CURRENT_CONTENT has concrete missing or unreadable structure. Name the exact delimiter, construct, or location that prevents a reliable explanation instead of broadly calling the content broken.",
       "Describe only evidence present in the source. Do not claim that an operation succeeded, failed, or occurred unless the source explicitly supports it.",
+      contentCompletenessRule(for: request.source.contentLength.completeness),
     ]
+  }
+
+  private static func contentCompletenessRule(
+    for completeness: SemanticContentCompleteness
+  ) -> String {
+    switch completeness {
+    case .complete:
+      return "source.contentCompleteness is complete. Treat CURRENT_CONTENT as the complete selected explanation object."
+    case .excerpt:
+      return "source.contentCompleteness is excerpt. Explicitly tell the learner that only part of a longer source is visible. Do not claim that definitions, declarations, delimiters, facts, or sections are absent from the full source merely because they are outside the declared excerpt range."
+    }
   }
 
   private static func levelRule(for level: UserKnowledgeLevel) -> String {

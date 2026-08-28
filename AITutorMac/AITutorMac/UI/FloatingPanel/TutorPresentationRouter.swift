@@ -71,7 +71,7 @@ final class TutorPresentationRouter {
   ) {
     contentStore.presentError(error)
     if origin == .userInitiated, !isPanelVisible() {
-      petNotificationSink?.notify(petBubbleAdapter.makeErrorNotification())
+      petNotificationSink?.notify(petBubbleAdapter.makeErrorNotification(for: error))
     }
   }
 

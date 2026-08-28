@@ -12,6 +12,28 @@ struct ContextRevision: Equatable, Sendable {
   let identity: ContextIdentity
 }
 
+#if DEBUG
+struct TutorContextPipelineDebugSnapshot: Equatable, Sendable {
+  let sourceApplication: String?
+  let bundleIdentifier: String?
+  let processIdentifier: pid_t
+  let focusedWindow: String?
+  let focusedWindowToken: String
+  let snapshotSource: String
+  let contextRevisionID: Int
+  let timestamp: Date
+  let rawSnapshot: String
+  let normalizedText: String
+  let previousBaseline: String
+  let currentSnapshot: String
+  let detectedAddedText: String
+  let detectedRemovedText: String
+  let detectedStableText: String
+  let diffKind: ContextDiffKind
+  let truncated: Bool
+}
+#endif
+
 /// Owns one live session's latest normalized context. Previous text is used as
 /// the next diff baseline and then replaced; no revision body history is kept.
 @MainActor
@@ -26,6 +48,10 @@ final class ContextRevisionPipeline {
   }
 
   @ObservationIgnored var onRevision: ((ContextRevision) -> Void)?
+#if DEBUG
+  @ObservationIgnored var onDebugSnapshot:
+    ((TutorContextPipelineDebugSnapshot) -> Void)?
+#endif
   @ObservationIgnored private let identityFactory: ContextIdentityFactory
   @ObservationIgnored private let normalizer: TextNormalizer
   @ObservationIgnored private let fingerprinter: ContextFingerprinter
@@ -58,7 +84,7 @@ final class ContextRevisionPipeline {
 
     guard let currentIdentity, let previousText = latestNormalizedText else {
       revisionSequence = 0
-      return publish(
+      let revision = publish(
         revisionID: revisionSequence,
         timestamp: snapshot.window.observedAt,
         changeType: .baseline,
@@ -68,11 +94,20 @@ final class ContextRevisionPipeline {
         normalizedText: normalizedText,
         identity: identity
       )
+#if DEBUG
+      publishDebug(
+        snapshot: snapshot,
+        previousText: nil,
+        normalizedText: normalizedText,
+        revision: revision
+      )
+#endif
+      return revision
     }
 
     guard currentIdentity == identity else {
       revisionSequence = 0
-      return publish(
+      let revision = publish(
         revisionID: revisionSequence,
         timestamp: snapshot.window.observedAt,
         changeType: .reset,
@@ -82,6 +117,15 @@ final class ContextRevisionPipeline {
         normalizedText: normalizedText,
         identity: identity
       )
+#if DEBUG
+      publishDebug(
+        snapshot: snapshot,
+        previousText: previousText,
+        normalizedText: normalizedText,
+        revision: revision
+      )
+#endif
+      return revision
     }
 
     let diff = diffEngine.diff(previous: previousText, current: normalizedText)
@@ -89,7 +133,7 @@ final class ContextRevisionPipeline {
       revisionSequence += 1
     }
 
-    return publish(
+    let revision = publish(
       revisionID: revisionSequence,
       timestamp: snapshot.window.observedAt,
       changeType: diff.kind,
@@ -99,6 +143,15 @@ final class ContextRevisionPipeline {
       normalizedText: normalizedText,
       identity: identity
     )
+#if DEBUG
+    publishDebug(
+      snapshot: snapshot,
+      previousText: previousText,
+      normalizedText: normalizedText,
+      revision: revision
+    )
+#endif
+    return revision
   }
 
   func clear() {
@@ -134,4 +187,77 @@ final class ContextRevisionPipeline {
     onRevision?(revision)
     return revision
   }
+
+#if DEBUG
+  private func publishDebug(
+    snapshot: AccessibleTextSnapshot,
+    previousText: NormalizedContextText?,
+    normalizedText: NormalizedContextText,
+    revision: ContextRevision
+  ) {
+    let diagnostic = Self.debugMiddleDiff(
+      previous: previousText?.displayText ?? "",
+      current: normalizedText.displayText
+    )
+    onDebugSnapshot?(
+      TutorContextPipelineDebugSnapshot(
+        sourceApplication: snapshot.window.application.appName,
+        bundleIdentifier: snapshot.window.application.bundleIdentifier,
+        processIdentifier: snapshot.window.application.processIdentifier,
+        focusedWindow: snapshot.window.windowTitle,
+        focusedWindowToken: revision.identity.focusedWindowIdentity.rawValue,
+        snapshotSource: snapshot.window.source.rawValue,
+        contextRevisionID: revision.revisionID,
+        timestamp: revision.timestamp,
+        rawSnapshot: snapshot.plainText,
+        normalizedText: normalizedText.displayText,
+        previousBaseline: previousText?.displayText ?? "",
+        currentSnapshot: normalizedText.displayText,
+        detectedAddedText: revision.addedText,
+        detectedRemovedText: diagnostic.removed,
+        detectedStableText: diagnostic.stable,
+        diffKind: revision.changeType,
+        truncated: snapshot.truncated
+      )
+    )
+  }
+
+  private static func debugMiddleDiff(
+    previous: String,
+    current: String
+  ) -> (removed: String, stable: String) {
+    let previousCharacters = Array(previous)
+    let currentCharacters = Array(current)
+    var prefixCount = 0
+    while
+      prefixCount < min(previousCharacters.count, currentCharacters.count),
+      previousCharacters[prefixCount] == currentCharacters[prefixCount]
+    {
+      prefixCount += 1
+    }
+
+    var suffixCount = 0
+    let suffixLimit = min(previousCharacters.count, currentCharacters.count) - prefixCount
+    while
+      suffixCount < suffixLimit,
+      previousCharacters[previousCharacters.count - suffixCount - 1]
+        == currentCharacters[currentCharacters.count - suffixCount - 1]
+    {
+      suffixCount += 1
+    }
+
+    let removedEnd = previousCharacters.count - suffixCount
+    let removed = prefixCount < removedEnd
+      ? String(previousCharacters[prefixCount..<removedEnd])
+      : ""
+    let prefix = String(previousCharacters.prefix(prefixCount))
+    let suffix = suffixCount > 0
+      ? String(previousCharacters.suffix(suffixCount))
+      : ""
+    let stable = [prefix, suffix]
+      .filter { !$0.isEmpty }
+      .joined(separator: prefix.isEmpty || suffix.isEmpty ? "" : "\n…\n")
+    return (removed, stable)
+  }
+#endif
 }

@@ -1,6 +1,19 @@
 import Foundation
 import Observation
 
+#if DEBUG
+struct TutorSemanticBufferDebugEvent: Equatable, Sendable {
+  let revisionID: Int
+  let bufferBefore: String
+  let incomingDiff: String
+  let bufferAfter: String
+  let commitReason: String?
+  let transitionReason: String?
+  let commitTimestamp: Date?
+  let chunkID: UUID?
+}
+#endif
+
 /// Converts incremental revision text into stable, one-shot chunks. Only the
 /// current pending body is retained; emitted chunk bodies are never archived.
 @MainActor
@@ -22,6 +35,10 @@ final class SemanticBuffer {
   }
 
   @ObservationIgnored var onChunk: ((SemanticChunk) -> Void)?
+#if DEBUG
+  @ObservationIgnored var onDebugEvent: ((TutorSemanticBufferDebugEvent) -> Void)?
+  @ObservationIgnored private var debugIncomingDiff = ""
+#endif
   @ObservationIgnored private let configuration: SemanticBufferConfiguration
   @ObservationIgnored private let now: () -> Date
   @ObservationIgnored private let makeID: () -> UUID
@@ -46,7 +63,13 @@ final class SemanticBuffer {
   }
 
   func ingest(_ revision: ContextRevision) {
+    let debugBufferBefore = pendingText
     let identityChanged = currentIdentity.map { $0 != revision.identity } ?? false
+#if DEBUG
+    let debugTransitionReason = identityChanged
+      ? Self.debugIdentityTransitionReason(from: currentIdentity, to: revision.identity)
+      : nil
+#endif
     let previousCharacterCount = identityChanged ? nil : lastObservedCharacterCount
 
     if currentIdentity == nil || identityChanged {
@@ -72,6 +95,20 @@ final class SemanticBuffer {
         currentCharacterCount: revision.characterCount
       )
     }
+#if DEBUG
+    onDebugEvent?(
+      TutorSemanticBufferDebugEvent(
+        revisionID: revision.revisionID,
+        bufferBefore: debugBufferBefore,
+        incomingDiff: revision.addedText,
+        bufferAfter: pendingText,
+        commitReason: nil,
+        transitionReason: debugTransitionReason,
+        commitTimestamp: nil,
+        chunkID: nil
+      )
+    )
+#endif
   }
 
   @discardableResult
@@ -102,6 +139,10 @@ final class SemanticBuffer {
       return
     }
 
+#if DEBUG
+    debugIncomingDiff = fragment
+    defer { debugIncomingDiff = "" }
+#endif
     if shouldRestoreSeparator(
       before: fragment,
       previousCharacterCount: previousCharacterCount,
@@ -183,6 +224,7 @@ final class SemanticBuffer {
       return nil
     }
 
+    let bufferBeforeCommit = pendingText
     let rawChunkText = String(pendingText.prefix(characterCount))
     let chunkText = rawChunkText.trimmingCharacters(in: .whitespacesAndNewlines)
     pendingText = String(pendingText.dropFirst(characterCount))
@@ -196,12 +238,13 @@ final class SemanticBuffer {
     }
 
     state = .flushing
+    let createdAt = now()
     let chunk = SemanticChunk(
       id: makeID(),
       sourceRevisionID: sourceRevisionID,
       text: chunkText,
       confidence: pendingConfidence,
-      createdAt: now(),
+      createdAt: createdAt,
       flushReason: reason
     )
     chunkCount += 1
@@ -217,6 +260,20 @@ final class SemanticBuffer {
     AppLogger.tutorRuntime.debug(
       "Semantic chunk emitted id=\(chunk.id.uuidString, privacy: .public) revision=\(chunk.sourceRevisionID, privacy: .public) confidence=\(chunk.confidence.rawValue, privacy: .public) flush=\(chunk.flushReason.rawValue, privacy: .public) characters=\(chunk.text.count, privacy: .public) emitted=\(self.chunkCount, privacy: .public)"
     )
+#if DEBUG
+    onDebugEvent?(
+      TutorSemanticBufferDebugEvent(
+        revisionID: sourceRevisionID,
+        bufferBefore: bufferBeforeCommit,
+        incomingDiff: debugIncomingDiff,
+        bufferAfter: pendingText,
+        commitReason: reason.rawValue,
+        transitionReason: nil,
+        commitTimestamp: createdAt,
+        chunkID: chunk.id
+      )
+    )
+#endif
     onChunk?(chunk)
     return chunk
   }
@@ -295,6 +352,28 @@ final class SemanticBuffer {
     }
     return .high
   }
+
+#if DEBUG
+  private static func debugIdentityTransitionReason(
+    from previous: ContextIdentity?,
+    to current: ContextIdentity
+  ) -> String {
+    guard let previous else {
+      return "new-session"
+    }
+    if previous.bundleIdentifier != current.bundleIdentifier
+      || previous.processIdentifier != current.processIdentifier {
+      return "application-change"
+    }
+    if previous.focusedWindowIdentity != current.focusedWindowIdentity {
+      return "window-change"
+    }
+    if previous.liveSessionIdentifier != current.liveSessionIdentifier {
+      return "live-session-change"
+    }
+    return "identity-change"
+  }
+#endif
 
   /// Returns sentence end offsets as Character counts. Fenced code is treated
   /// as opaque so punctuation inside code does not split the block.

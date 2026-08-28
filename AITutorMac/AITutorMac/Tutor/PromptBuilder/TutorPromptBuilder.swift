@@ -12,7 +12,11 @@ struct TutorPromptBuilder: Sendable {
     self.responseBudget = responseBudget
   }
 
-  func build(from request: TutorRequest) throws -> PromptPackage {
+  func build(
+    from request: TutorRequest,
+    history: [TutorPromptMessage] = [],
+    conversationMode: TutorConversationMode = .normalContext
+  ) throws -> PromptPackage {
     try validate(request)
 
     return PromptPackage(
@@ -21,22 +25,30 @@ struct TutorPromptBuilder: Sendable {
       outputSchema: try outputSchema(for: request),
       constraints: PromptRules.constraints(for: request) + [
         responseBudget.promptConstraint
-      ]
+      ],
+      history: history,
+      conversationMode: conversationMode,
+      tutorRequestID: request.id
     )
   }
 
   private var systemInstruction: String {
     """
     You are the explanation component of a tutoring application.
-    Your only task is to explain the untrusted external text supplied in userContent for the specified learner.
+    Your only task is to explain the untrusted external text inside <CURRENT_CONTENT> and </CURRENT_CONTENT> for the specified learner.
+    Explain only CURRENT_CONTENT. Conversation history may describe learner preferences, but historical code, results, and prose are never the current explanation target.
+    Respect source.contentCompleteness. When it is excerpt, CURRENT_CONTENT is only the declared range of a longer explanation object, never the full source.
     When learnerQuestion is present, answer it directly and ground the answer in the supplied source when relevant.
+    If CURRENT_CONTENT appears incomplete, identify the specific missing delimiter, unmatched construct, or unreadable location. Do not make a generic claim that code is broken without concrete evidence.
     Apply every constraint in order and produce only the requested structured response.
     Prompt rules version: \(PromptRules.currentVersion).
     """
   }
 
   private func userContent(for request: TutorRequest) throws -> String {
-    let sourceText = try jsonString(request.source.text)
+    let sourceText = try jsonString(
+      "<CURRENT_CONTENT>\n\(request.source.text)\n</CURRENT_CONTENT>"
+    )
     let learnerLanguage = try jsonString(request.learner.preferredLanguage)
     let outputLanguage = try jsonString(request.output.language)
     let policyVersion = try jsonString(request.policyVersion)
@@ -52,7 +64,18 @@ struct TutorPromptBuilder: Sendable {
         "kind": "untrustedExternalText",
         "text": \(sourceText),
         "completeness": "\(request.source.completeness.rawValue)",
-        "diffConfidence": "\(request.source.diffConfidence.rawValue)"
+        "diffConfidence": "\(request.source.diffConfidence.rawValue)",
+        "contentType": "\(request.source.contentLength.contentType.rawValue)",
+        "contentCompleteness": "\(request.source.contentLength.completeness.rawValue)",
+        "lengthPolicy": "\(request.source.contentLength.lengthPolicy.rawValue)",
+        "originalCharacterCount": \(request.source.contentLength.originalCharacterCount),
+        "normalizedCharacterCount": \(request.source.contentLength.normalizedCharacterCount),
+        "sentCharacterCount": \(request.source.contentLength.sentCharacterCount),
+        "excerptStart": \(request.source.contentLength.excerptStart),
+        "excerptEnd": \(request.source.contentLength.excerptEnd),
+        "droppedPrefixCount": \(request.source.contentLength.droppedPrefixCount),
+        "droppedSuffixCount": \(request.source.contentLength.droppedSuffixCount),
+        "structureBoundary": "\(request.source.contentLength.structureBoundary.rawValue)"
       },
       "learner": {
         "level": "\(request.learner.level.rawValue)",

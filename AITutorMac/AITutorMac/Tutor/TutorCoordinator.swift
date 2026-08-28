@@ -108,6 +108,14 @@ final class TutorCoordinator {
   @ObservationIgnored private var latestLatencyTrace: TutorLatencyTrace?
   @ObservationIgnored var onPresentationReady: (@MainActor (TutorPresentationModel, TutorTrigger) -> Void)?
   @ObservationIgnored var onRequestFailure: (@MainActor (TutorEngineError) -> Void)?
+#if DEBUG
+  @ObservationIgnored var debugConversationModeProvider:
+    (@MainActor () -> TutorConversationMode) = { .normalContext }
+  @ObservationIgnored var onDebugRequestStarted:
+    (@MainActor (TutorRequest, PromptPackage, TutorLatencyTrace) -> Void)?
+  @ObservationIgnored var onDebugRequestFinished:
+    (@MainActor (UUID, TutorLatencyMetrics, TutorTransportExchangeDebugSnapshot) -> Void)?
+#endif
 
   init(
     engine: any TutorEngine,
@@ -259,7 +267,15 @@ final class TutorCoordinator {
         output: output
       )
       latencyTrace.markRequestCreated(requestID: request.id)
-      promptPackage = try promptBuilder.build(from: request)
+#if DEBUG
+      let conversationMode = debugConversationModeProvider()
+#else
+      let conversationMode = TutorConversationMode.normalContext
+#endif
+      promptPackage = try promptBuilder.build(
+        from: request,
+        conversationMode: conversationMode
+      )
       latencyTrace.markPromptBuilt(
         promptPackage,
         sourceCharacterCount: request.source.text.count
@@ -303,6 +319,9 @@ final class TutorCoordinator {
     lastError = nil
     requestCount += 1
     state = .processing
+#if DEBUG
+    onDebugRequestStarted?(request, promptPackage, latencyTrace)
+#endif
 
     activeTask = Task { @MainActor
       [weak self, engine, responseValidator, presentationMapper] in
@@ -434,6 +453,16 @@ final class TutorCoordinator {
     providerState = .succeeded(responseID: response.id)
     lastError = nil
     state = .idle
+#if DEBUG
+    if let metrics = latestLatencyMetrics {
+      onDebugRequestFinished?(
+        context.requestID,
+        metrics,
+        latestLatencyTrace?.debugExchangeSnapshot
+          ?? TutorTransportExchangeDebugSnapshot(request: nil, response: nil)
+      )
+    }
+#endif
     onPresentationReady?(presentation, latestRequest?.trigger ?? .automatic)
   }
 
@@ -460,6 +489,19 @@ final class TutorCoordinator {
     }
     lastError = error
     state = .idle
+#if DEBUG
+    if latestLatencyTrace?.debugExchangeSnapshot.response == nil {
+      latestLatencyTrace?.recordDebugAPIError(error)
+    }
+    if let metrics = latestLatencyTrace?.snapshot {
+      onDebugRequestFinished?(
+        context.requestID,
+        metrics,
+        latestLatencyTrace?.debugExchangeSnapshot
+          ?? TutorTransportExchangeDebugSnapshot(request: nil, response: nil)
+      )
+    }
+#endif
     if error != .cancelled {
       onRequestFailure?(error)
     }

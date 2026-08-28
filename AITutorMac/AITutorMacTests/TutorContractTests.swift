@@ -39,9 +39,46 @@ final class TutorContractTests: XCTestCase {
     XCTAssertEqual(request.source.flushReason, .sentenceComplete)
     XCTAssertEqual(request.source.chunkCreatedAt, chunk.createdAt)
     XCTAssertEqual(request.source.completeness, .completeSentence)
+    XCTAssertEqual(request.source.contentLength, chunk.contentLength)
     XCTAssertEqual(request.learner, learner)
     XCTAssertEqual(request.output.language, learner.preferredLanguage)
     XCTAssertEqual(request.policyVersion, TutorRequestFactory.defaultPolicyVersion)
+  }
+
+  func testFactoryPreservesStructureAwareExcerptMetadata() throws {
+    let text = "func example() {}"
+    let metadata = SemanticContentLengthMetadata(
+      contentType: .focusedCodeLike,
+      completeness: .excerpt,
+      lengthPolicy: .structureAwareCodeExcerpt,
+      originalCharacterCount: 8_000,
+      normalizedCharacterCount: 7_990,
+      sentCharacterCount: text.count,
+      excerptStart: 0,
+      excerptEnd: text.count,
+      droppedPrefixCount: 0,
+      droppedSuffixCount: 7_990 - text.count,
+      structureBoundary: .codeBlock
+    )
+    let chunk = SemanticChunk(
+      id: chunkID(),
+      sourceRevisionID: 3,
+      text: text,
+      confidence: .high,
+      createdAt: Date(timeIntervalSince1970: 1_800),
+      flushReason: .manualFlush,
+      contentLength: metadata
+    )
+
+    let request = try TutorRequestFactory(now: fixedNow, makeID: requestID).make(
+      from: chunk,
+      sessionID: sessionID(),
+      sequence: 1,
+      learner: .productDefault(at: fixedNow())
+    )
+
+    XCTAssertEqual(request.source.contentLength, metadata)
+    XCTAssertEqual(request.source.text, text)
   }
 
   func testSourceCompletenessMapsEveryFlushReason() throws {
@@ -92,17 +129,26 @@ final class TutorContractTests: XCTestCase {
   }
 
   func testFactoryCannotRaiseTheDomainSourceLimit() {
-    let factory = TutorRequestFactory(maximumSourceCharacterCount: 2_000)
+    let requestedLimit = TutorRequest.defaultMaximumSourceCharacterCount * 2
+    let factory = TutorRequestFactory(maximumSourceCharacterCount: requestedLimit)
 
     XCTAssertEqual(
       factory.maximumSourceCharacterCount,
       TutorRequest.defaultMaximumSourceCharacterCount
     )
     assertFactoryError(
-      chunk: semanticChunk(text: String(repeating: "字", count: 1_001)),
+      chunk: semanticChunk(
+        text: String(
+          repeating: "字",
+          count: TutorRequest.defaultMaximumSourceCharacterCount + 1
+        )
+      ),
       factory: factory,
       expected: .invalidRequest(
-        .sourceTextTooLong(maximum: 1_000, actual: 1_001)
+        .sourceTextTooLong(
+          maximum: TutorRequest.defaultMaximumSourceCharacterCount,
+          actual: TutorRequest.defaultMaximumSourceCharacterCount + 1
+        )
       )
     )
   }

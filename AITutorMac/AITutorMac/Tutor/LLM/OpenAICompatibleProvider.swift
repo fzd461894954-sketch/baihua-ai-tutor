@@ -68,7 +68,11 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
     latencyTrace: TutorLatencyTrace?
   ) async throws -> RawLLMResponse {
     do {
-      let request = try makeRequest(from: prompt, stream: false)
+      let request = try makeRequest(
+        from: prompt,
+        stream: false,
+        latencyTrace: latencyTrace
+      )
       let (data, response) = try await perform(
         request,
         latencyTrace: latencyTrace
@@ -95,7 +99,11 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
   ) async -> AsyncThrowingStream<RawLLMStreamChunk, Error> {
     let request: URLRequest
     do {
-      request = try makeRequest(from: prompt, stream: true)
+      request = try makeRequest(
+        from: prompt,
+        stream: true,
+        latencyTrace: latencyTrace
+      )
     } catch {
       return Self.failedStream(with: Self.normalized(error))
     }
@@ -140,7 +148,8 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
 
   private func makeRequest(
     from prompt: PromptPackage,
-    stream: Bool
+    stream: Bool,
+    latencyTrace: TutorLatencyTrace?
   ) throws -> URLRequest {
     guard
       ["http", "https"].contains(endpoint.scheme?.lowercased() ?? ""),
@@ -154,12 +163,17 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
       throw LLMProviderError.unavailable
     }
 
+    var messages: [[String: String]] = [
+      ["role": "system", "content": systemContent(for: prompt)]
+    ]
+    messages.append(contentsOf: prompt.history.map {
+      ["role": $0.role.rawValue, "content": $0.content]
+    })
+    messages.append(["role": "user", "content": prompt.userContent])
+
     var body: [String: Any] = [
       "model": model,
-      "messages": [
-        ["role": "system", "content": systemContent(for: prompt)],
-        ["role": "user", "content": prompt.userContent],
-      ],
+      "messages": messages,
       "temperature": temperature,
       "max_tokens": maxTokens,
       "stream": stream,
@@ -191,6 +205,33 @@ final class OpenAICompatibleProvider: LLMProvider, @unchecked Sendable {
     } catch {
       throw LLMProviderError.invalidResponse
     }
+
+#if DEBUG
+    let redactedPayload = String(data: encodedBody, encoding: .utf8) ?? "<encoding failed>"
+    latencyTrace?.recordDebugAPIRequest(
+      TutorTransportRequestDebugSnapshot(
+        tutorRequestID: prompt.tutorRequestID,
+        provider: "openai-compatible",
+        model: model,
+        conversationMode: prompt.conversationMode,
+        messages: messages.map {
+          TutorTransportMessageDebugSnapshot(
+            role: $0["role"] ?? "unknown",
+            content: $0["content"] ?? ""
+          )
+        },
+        inputCharacterCount: messages.reduce(0) {
+          $0 + ($1["content"]?.count ?? 0)
+        },
+        estimatedTokenCount: Int(ceil(Double(messages.reduce(0) {
+          $0 + ($1["content"]?.count ?? 0)
+        }) / 4.0)),
+        streamingEnabled: stream,
+        redactedPayload: redactedPayload,
+        recordedAt: Date()
+      )
+    )
+#endif
 
     var request = URLRequest(url: endpoint)
     request.httpMethod = "POST"

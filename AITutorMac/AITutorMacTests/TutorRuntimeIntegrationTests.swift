@@ -96,7 +96,7 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     let sessionID = UUID()
     provider.beginSession(sessionID)
     let snapshot = makeSnapshot(
-      plainText: "Back\nhttps://chatgpt.\nTransformer 会根据上下文预测下一个 token。",
+      plainText: "Back\nhttps://chatgpt.\nTransformer 会根据上下文预测下一个 token。\n问问 ChatGPT",
       nodes: [
         AccessibleTextNode(
           role: "AXButton",
@@ -116,6 +116,12 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
           depth: 4,
           sourceAttribute: .value
         ),
+        AccessibleTextNode(
+          role: "AXTextArea",
+          text: "问问 ChatGPT",
+          depth: 4,
+          sourceAttribute: .value
+        ),
       ]
     )
 
@@ -127,6 +133,7 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     XCTAssertEqual(chunk.text, "Transformer 会根据上下文预测下一个 token。")
     XCTAssertFalse(chunk.text.contains("https://chatgpt."))
     XCTAssertFalse(chunk.text.contains("Back"))
+    XCTAssertFalse(chunk.text.contains("问问 ChatGPT"))
     XCTAssertEqual(chunk.flushReason, .manualFlush)
   }
 
@@ -156,7 +163,7 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     )
   }
 
-  func testCurrentSnapshotExcerptRemainsBoundedToTutorLimit() throws {
+  func testCurrentSnapshotExcerptIsBoundedAndDoesNotSilentlyPreferTail() throws {
     let provider = CurrentExplainableContentProvider(maximumCharacterCount: 100)
     let sessionID = UUID()
     provider.beginSession(sessionID)
@@ -180,7 +187,76 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     )
     let chunk = try provider.currentSemanticChunk()
     XCTAssertLessThanOrEqual(chunk.text.count, 100)
-    XCTAssertTrue(chunk.text.contains("latest visible explanation"))
+    XCTAssertTrue(chunk.text.hasPrefix("older context line"))
+    XCTAssertFalse(chunk.text.contains("latest visible explanation"))
+    XCTAssertEqual(chunk.contentLength.completeness, .excerpt)
+    XCTAssertEqual(chunk.contentLength.lengthPolicy, .boundedMixedExcerpt)
+    XCTAssertEqual(chunk.contentLength.excerptStart, 0)
+    XCTAssertEqual(chunk.contentLength.droppedPrefixCount, 0)
+    XCTAssertGreaterThan(chunk.contentLength.droppedSuffixCount, 0)
+  }
+
+  func testAmbiguousSnapshotFailsClosedAndClearsPreviouslySendableContent() throws {
+    let provider = CurrentExplainableContentProvider()
+    let sessionID = UUID()
+    provider.beginSession(sessionID)
+    provider.receive(makeChunk(text: "previous focused content"), sessionID: sessionID)
+
+    XCTAssertEqual(
+      provider.receiveCurrentSnapshot(
+        makeAmbiguousSnapshot(),
+        revisionID: 3,
+        sessionID: sessionID
+      ),
+      .rejected(.ambiguousContent)
+    )
+    XCTAssertEqual(provider.latestContentSelection?.reason, .wholeSnapshotFallback)
+    XCTAssertTrue(provider.latestContentSelection?.usedWholeSnapshotFallback == true)
+    XCTAssertFalse(provider.hasStableContent)
+    XCTAssertThrowsError(try provider.currentSemanticChunk())
+  }
+
+  func testFocusedSnapshotImmediatelyRecoversAfterAmbiguousSnapshot() throws {
+    let provider = CurrentExplainableContentProvider()
+    let sessionID = UUID()
+    provider.beginSession(sessionID)
+    XCTAssertEqual(
+      provider.receiveCurrentSnapshot(
+        makeAmbiguousSnapshot(),
+        revisionID: 1,
+        sessionID: sessionID
+      ),
+      .rejected(.ambiguousContent)
+    )
+    let focused = makeSnapshot(
+      plainText: "focused explanation\nnewer unrelated content",
+      nodes: [
+        AccessibleTextNode(
+          role: "AXStaticText",
+          text: "focused explanation",
+          depth: 2,
+          sourceAttribute: .value,
+          debugNodeID: "focused",
+          traversalIndex: 2,
+          isFocused: true
+        ),
+        AccessibleTextNode(
+          role: "AXStaticText",
+          text: "newer unrelated content",
+          depth: 2,
+          sourceAttribute: .value,
+          debugNodeID: "newer",
+          traversalIndex: 4
+        ),
+      ]
+    )
+
+    XCTAssertEqual(
+      provider.receiveCurrentSnapshot(focused, revisionID: 2, sessionID: sessionID),
+      .accepted
+    )
+    XCTAssertEqual(provider.latestContentSelection?.reason, .focusedElement)
+    XCTAssertEqual(try provider.currentSemanticChunk().text, "focused explanation")
   }
 
 #if DEBUG
@@ -220,6 +296,87 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
     await settle()
 
     XCTAssertEqual(runtime.store.state, .error(.noStableContent))
+    let callCount = await provider.generateCallCount
+    XCTAssertEqual(callCount, 0)
+  }
+
+  func testAmbiguousContentDoesNotCallProvider() async {
+    let provider = FakeLLMProvider()
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: provider),
+      resolveCurrentContent: { throw CurrentExplainableContentError.ambiguousContent }
+    )
+
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually { runtime.store.state == .error(.ambiguousContent) }
+
+    XCTAssertNil(runtime.coordinator.latestRequest)
+    let callCount = await provider.generateCallCount
+    XCTAssertEqual(callCount, 0)
+  }
+
+  func testAmbiguousContentShowsExplicitTargetHint() async {
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: FakeLLMProvider()),
+      resolveCurrentContent: { throw CurrentExplainableContentError.ambiguousContent }
+    )
+
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually { runtime.store.state == .error(.ambiguousContent) }
+
+    guard case let .error(error) = runtime.store.state else {
+      return XCTFail("Expected ambiguous content hint")
+    }
+    XCTAssertEqual(error.title, "请先点一下要解释的内容")
+    XCTAssertEqual(
+      error.message,
+      "我现在看到页面里有几段不同的内容，请点一下或选中你想让我解释的那一段。"
+    )
+  }
+
+  func testAmbiguousTurnThenFocusedTurnCallsProviderOnce() async {
+    let provider = FakeLLMProvider()
+    let focusedChunk = makeChunk(text: "focused current content", revisionID: 8)
+    var resolutionCount = 0
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: provider),
+      resolveCurrentContent: {
+        resolutionCount += 1
+        if resolutionCount == 1 {
+          throw CurrentExplainableContentError.ambiguousContent
+        }
+        return focusedChunk
+      }
+    )
+
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually { runtime.store.state == .error(.ambiguousContent) }
+    let blockedCallCount = await provider.generateCallCount
+    XCTAssertEqual(blockedCallCount, 0)
+
+    runtime.controller.handle(.retryCurrentContent)
+    await eventually {
+      if case .presentation = runtime.store.state { return true }
+      return false
+    }
+    XCTAssertEqual(runtime.coordinator.latestRequest?.source.text, focusedChunk.text)
+    let recoveredCallCount = await provider.generateCallCount
+    XCTAssertEqual(recoveredCallCount, 1)
+  }
+
+  func testCurrentTurnOnlyCannotBypassAmbiguousContentBlock() async {
+    let provider = FakeLLMProvider()
+    let runtime = makeRuntime(
+      engine: LLMTutorEngine(provider: provider),
+      resolveCurrentContent: { throw CurrentExplainableContentError.ambiguousContent }
+    )
+    runtime.coordinator.debugConversationModeProvider = { .currentTurnOnly }
+
+    runtime.controller.handle(.explainCurrentContent)
+    await eventually { runtime.store.state == .error(.ambiguousContent) }
+
+    XCTAssertNil(runtime.coordinator.latestPromptPackage)
+    XCTAssertNil(runtime.coordinator.latestRequest)
     let callCount = await provider.generateCallCount
     XCTAssertEqual(callCount, 0)
   }
@@ -633,6 +790,30 @@ final class TutorRuntimeIntegrationTests: XCTestCase {
       roleCounts: [:],
       truncated: false,
       duration: 0.01
+    )
+  }
+
+  private func makeAmbiguousSnapshot() -> AccessibleTextSnapshot {
+    makeSnapshot(
+      plainText: "first ambiguous content\nsecond ambiguous content",
+      nodes: [
+        AccessibleTextNode(
+          role: "AXStaticText",
+          text: "first ambiguous content",
+          depth: 2,
+          sourceAttribute: .value,
+          debugNodeID: "ambiguous-first",
+          traversalIndex: 2
+        ),
+        AccessibleTextNode(
+          role: "AXStaticText",
+          text: "second ambiguous content",
+          depth: 2,
+          sourceAttribute: .value,
+          debugNodeID: "ambiguous-second",
+          traversalIndex: 4
+        ),
+      ]
     )
   }
 

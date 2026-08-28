@@ -212,6 +212,20 @@ final class TutorPetBubbleTests: XCTestCase {
     XCTAssertNil(fixture.center.latestSourcePresentationID)
   }
 
+  func testAmbiguousContentRouteUsesExplicitTargetHint() {
+    let fixture = makeRouterFixture(panelVisible: false)
+
+    fixture.router.routeError(.ambiguousContent, origin: .userInitiated)
+
+    XCTAssertEqual(fixture.store.state, .error(.ambiguousContent))
+    XCTAssertEqual(
+      fixture.center.latestNotification?.message,
+      "我看到几段不同的内容，请点一下或选中要解释的那一段。"
+    )
+    XCTAssertFalse(fixture.center.latestNotification?.message.contains("AX") == true)
+    XCTAssertFalse(fixture.center.latestNotification?.message.contains("Snapshot") == true)
+  }
+
   func testNoTutorResultLeavesExistingPetNotificationBehaviorUntouched() {
     let center = TutorPetNotificationCenter(autoDismissDuration: 5)
     let renderer = RecordingTutorNotificationRenderer()

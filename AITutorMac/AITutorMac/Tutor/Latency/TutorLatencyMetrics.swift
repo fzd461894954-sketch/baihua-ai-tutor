@@ -1,5 +1,42 @@
 import Foundation
 
+#if DEBUG
+struct TutorTransportMessageDebugSnapshot: Equatable, Sendable {
+  let role: String
+  let content: String
+}
+
+struct TutorTransportRequestDebugSnapshot: Equatable, Sendable {
+  let tutorRequestID: UUID?
+  let provider: String
+  let model: String
+  let conversationMode: TutorConversationMode
+  let messages: [TutorTransportMessageDebugSnapshot]
+  let inputCharacterCount: Int
+  let estimatedTokenCount: Int
+  let streamingEnabled: Bool
+  /// JSON body only. HTTP headers and credentials are never captured.
+  let redactedPayload: String
+  let recordedAt: Date
+}
+
+struct TutorTransportResponseDebugSnapshot: Equatable, Sendable {
+  let tutorRequestID: UUID?
+  let providerRequestID: String?
+  let provider: String
+  let model: String?
+  let responseText: String
+  let finishReason: String?
+  let error: String?
+  let recordedAt: Date
+}
+
+struct TutorTransportExchangeDebugSnapshot: Equatable, Sendable {
+  let request: TutorTransportRequestDebugSnapshot?
+  let response: TutorTransportResponseDebugSnapshot?
+}
+#endif
+
 struct TutorPromptSizeMetrics: Equatable, Sendable {
   let systemInstructionCharacters: Int
   let constraintsCharacters: Int
@@ -148,6 +185,10 @@ final class TutorLatencyTrace: @unchecked Sendable {
     var panelPresentedAt: Date?
     var usage = LLMUsageMetadata.unavailable
     var promptSize: TutorPromptSizeMetrics?
+#if DEBUG
+    var debugAPIRequest: TutorTransportRequestDebugSnapshot?
+    var debugAPIResponse: TutorTransportResponseDebugSnapshot?
+#endif
   }
 
   let id: UUID
@@ -244,6 +285,67 @@ final class TutorLatencyTrace: @unchecked Sendable {
     }
     update { $0.modelIdentifier = $0.modelIdentifier ?? modelIdentifier }
   }
+
+#if DEBUG
+  func recordDebugAPIRequest(_ request: TutorTransportRequestDebugSnapshot) {
+    update { state in
+      if state.debugAPIRequest == nil {
+        state.debugAPIRequest = request
+      }
+    }
+  }
+
+  func recordDebugAPIResponse(_ response: RawLLMResponse) {
+    let finishReason: String?
+    switch response.finishReason {
+    case .stop:
+      finishReason = "stop"
+    case .length:
+      finishReason = "length"
+    case .cancelled:
+      finishReason = "cancelled"
+    case let .other(value):
+      finishReason = value
+    case nil:
+      finishReason = nil
+    }
+    update { state in
+      state.debugAPIResponse = TutorTransportResponseDebugSnapshot(
+        tutorRequestID: state.requestID,
+        providerRequestID: response.providerMetadata.requestIdentifier,
+        provider: response.providerMetadata.providerIdentifier,
+        model: response.providerMetadata.modelIdentifier,
+        responseText: response.content,
+        finishReason: finishReason,
+        error: nil,
+        recordedAt: now()
+      )
+    }
+  }
+
+  func recordDebugAPIError(_ error: Error) {
+    update { state in
+      state.debugAPIResponse = TutorTransportResponseDebugSnapshot(
+        tutorRequestID: state.requestID,
+        providerRequestID: nil,
+        provider: state.debugAPIRequest?.provider ?? "unknown",
+        model: state.debugAPIRequest?.model ?? state.modelIdentifier,
+        responseText: "",
+        finishReason: nil,
+        error: String(describing: error),
+        recordedAt: now()
+      )
+    }
+  }
+
+  var debugExchangeSnapshot: TutorTransportExchangeDebugSnapshot {
+    lock.lock()
+    let request = state.debugAPIRequest
+    let response = state.debugAPIResponse
+    lock.unlock()
+    return TutorTransportExchangeDebugSnapshot(request: request, response: response)
+  }
+#endif
 
   var snapshot: TutorLatencyMetrics {
     lock.lock()

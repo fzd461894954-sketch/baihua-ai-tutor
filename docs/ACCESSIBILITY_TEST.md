@@ -72,6 +72,28 @@ Reaching any traversal budget sets `truncated = true` and returns the bounded
 snapshot. Target change, debug-window close, app quit, explicit Cancel, or the
 overall timeout cancels the active request and discards stale output.
 
+## WorkBuddy compatibility calibration
+
+WorkBuddy 5.3.14 (`com.workbuddy.workbuddy`) was calibrated on 2026-08-24. Its
+Electron window initially exposed only 10 shallow nodes and omitted the
+`AXWebArea`. Setting the application-owned `AXManualAccessibility` attribute to
+true made the current interface available as a structured tree with roughly
+1,200 nodes, including the visible conversation and composer.
+
+The production reader now performs that one-time opt-in only for WorkBuddy. It
+then finds the large conversation pane containing the bottom composer and reads
+that subtree, excluding the left task-history sidebar. The selector uses roles
+and window-relative geometry rather than conversation text, localized labels,
+or a fixed child-index path. If the richer tree or a suitable pane is not
+available, it safely falls back to the focused window.
+
+The same content-root selection now applies to Chrome, Safari, and the installed
+ChatGPT/Codex package (`com.openai.codex`). Chat surfaces select the central pane
+containing the bottom composer so browser chrome and conversation-history
+sidebars cannot consume the 2,000-node budget. A non-chat browser page falls
+back to the largest `AXWebArea`. Composer roles (`AXTextArea` and `AXTextField`)
+are excluded from the semantic excerpt.
+
 ## Automated tests
 
 The Accessibility suite covers permission gating, explicit/non-repeating system
@@ -104,9 +126,9 @@ TTS, or activate microphone capture.
 - full test suite: 91/91 passed;
 - `git diff --check`: passed;
 - Xcode project plist lint: passed;
-- forbidden API scan: no `AXUIElementSetAttributeValue`,
-  `AXUIElementPerformAction`, `AXObserverCreate`, `AXObserverAddNotification`,
-  ScreenCaptureKit, or Vision OCR use;
+- target-app mutation audit: `AXUIElementSetAttributeValue` is used only to set
+  WorkBuddy's application-level `AXManualAccessibility` flag; no UI action,
+  click, typing, ScreenCaptureKit, or Vision OCR is used;
 - Info.plist: no Screen Recording, Camera, or Photos permission was added;
 - logging/persistence audit: no snapshot body logging or storage path exists.
 

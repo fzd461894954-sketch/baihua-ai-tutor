@@ -1,7 +1,7 @@
 import Foundation
 
 struct NormalizedContextText: Equatable, Sendable {
-  static let normalizationVersion = 1
+  static let normalizationVersion = 2
 
   let displayText: String
   let comparisonText: String
@@ -54,11 +54,14 @@ struct TextNormalizer: Sendable {
         continue
       }
 
-      let line = collapseWhitespace(rawLine)
+      // Display text is also the Tutor source. Preserve leading indentation
+      // and internal horizontal whitespace so unfenced code is not rewritten.
+      // Comparison text performs its own whitespace folding below.
+      let line = trimTrailingHorizontalWhitespace(rawLine)
       if let marker = fenceMarker(in: line) {
         lines.append(line)
         activeFence = marker
-      } else if line.isEmpty {
+      } else if line.allSatisfy(\.isWhitespace) {
         if !lines.isEmpty, lines.last != "" {
           lines.append("")
         }
@@ -112,7 +115,7 @@ struct TextNormalizer: Sendable {
       } else if line.isEmpty {
         flushParagraph()
       } else {
-        paragraphLines.append(line)
+        paragraphLines.append(collapseWhitespace(line))
       }
     }
 

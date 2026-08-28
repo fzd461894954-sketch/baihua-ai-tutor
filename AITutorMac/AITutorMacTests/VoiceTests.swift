@@ -68,6 +68,63 @@ final class VoiceTests: XCTestCase {
     )
   }
 
+  func testLocalQwenVoicesAreChineseAndSerenaIsDefaultLocalVoice() throws {
+    let voices = LocalQwenVoice.speechVoiceOptions
+
+    XCTAssertEqual(voices.count, 5)
+    XCTAssertEqual(voices.first?.identifier, LocalQwenVoice.serena.identifier)
+    XCTAssertTrue(voices.allSatisfy { $0.language == "zh-CN" })
+    XCTAssertEqual(
+      SpeechConfiguration.resolvedVoiceIdentifier(
+        preferredIdentifier: nil,
+        availableVoices: voices
+      ),
+      LocalQwenVoice.serena.identifier
+    )
+  }
+
+  func testLocalQwenPayloadDoesNotAddCloudCredentialsOrPersistText() throws {
+    let request = SpeechRequest(
+      id: UUID(),
+      text: "请耐心解释这个概念。",
+      voiceIdentifier: LocalQwenVoice.serena.identifier,
+      rate: SpeechConfiguration.default.rate,
+      pitch: 1.1,
+      volume: 0.8
+    )
+
+    let payload = MLXSpeechServiceClient.payload(for: request, voice: .serena)
+    let object = try XCTUnwrap(
+      JSONSerialization.jsonObject(with: JSONEncoder().encode(payload)) as? [String: Any]
+    )
+
+    XCTAssertEqual(payload.model, MLXSpeechServiceClient.defaultModel)
+    XCTAssertEqual(object["input"] as? String, request.text)
+    XCTAssertEqual(object["voice"] as? String, "Serena")
+    XCTAssertEqual(object["lang_code"] as? String, "Chinese")
+    XCTAssertEqual(object["response_format"] as? String, "wav")
+    XCTAssertNil(object["api_key"])
+    XCTAssertNil(object["authorization"])
+  }
+
+  func testLocalQwenSpeedMappingStaysWithinTeachingFriendlyRange() {
+    XCTAssertEqual(
+      MLXSpeechServiceClient.generationSpeed(for: SpeechConfiguration.rateRange.lowerBound),
+      0.82,
+      accuracy: 0.0001
+    )
+    XCTAssertEqual(
+      MLXSpeechServiceClient.generationSpeed(for: SpeechConfiguration.rateRange.upperBound),
+      1.18,
+      accuracy: 0.0001
+    )
+    XCTAssertEqual(
+      MLXSpeechServiceClient.generationSpeed(for: -100),
+      0.82,
+      accuracy: 0.0001
+    )
+  }
+
   func testSpeakTransitionsToSpeakingAndCompletionRestoresPreviousState() throws {
     let (voice, speech, pet) = makeVoice(startingAt: .thinking)
 

@@ -81,6 +81,15 @@ final class OpenAICompatibleProviderTests: XCTestCase {
     XCTAssertEqual(metrics.modelIdentifier, "test-model")
     XCTAssertNil(metrics.firstSSEContentAt)
     XCTAssertFalse(String(reflecting: metrics).contains("answer"))
+#if DEBUG
+    let debugRequest = try XCTUnwrap(trace.debugExchangeSnapshot.request)
+    XCTAssertEqual(debugRequest.provider, "openai-compatible")
+    XCTAssertEqual(debugRequest.model, "test-model")
+    XCTAssertEqual(debugRequest.messages.count, 2)
+    XCTAssertEqual(debugRequest.messages.last?.content, prompt.userContent)
+    XCTAssertFalse(debugRequest.redactedPayload.contains("runtime-key"))
+    XCTAssertFalse(debugRequest.redactedPayload.contains("Bearer"))
+#endif
   }
 
   func testTutorSchemaIsAdaptedToStructuredOutputTransportSubset() async throws {
@@ -124,6 +133,57 @@ final class OpenAICompatibleProviderTests: XCTestCase {
     let outcome = try XCTUnwrap(properties["outcome"] as? [String: Any])
     XCTAssertNil(outcome["oneOf"])
     XCTAssertEqual((outcome["anyOf"] as? [Any])?.count, 3)
+  }
+
+  func testCurrentTurnOnlyRemovesHistoryFromTransportMessages() async throws {
+    let bodies = LockedArray<Data>()
+    MockOpenAIURLProtocol.install { protocolInstance in
+      if let data = protocolInstance.requestBodyData() {
+        bodies.append(data)
+      }
+      protocolInstance.respond(statusCode: 200, chunks: [Self.successResponseData])
+    }
+    let history = [
+      TutorPromptMessage(role: .user, content: "old user code"),
+      TutorPromptMessage(role: .assistant, content: "old result 8"),
+    ]
+    let normal = PromptPackage(
+      systemInstruction: prompt.systemInstruction,
+      userContent: prompt.userContent,
+      outputSchema: prompt.outputSchema,
+      constraints: prompt.constraints,
+      history: history,
+      conversationMode: .normalContext
+    )
+    let isolated = PromptPackage(
+      systemInstruction: prompt.systemInstruction,
+      userContent: prompt.userContent,
+      outputSchema: prompt.outputSchema,
+      constraints: prompt.constraints,
+      history: history,
+      conversationMode: .currentTurnOnly
+    )
+
+    _ = try await makeProvider().generate(from: normal)
+    _ = try await makeProvider().generate(from: isolated)
+
+    let captured = bodies.values
+    XCTAssertEqual(captured.count, 2)
+    let normalMessages = try XCTUnwrap(
+      requestJSONObject(captured[0])["messages"] as? [[String: Any]]
+    )
+    let isolatedMessages = try XCTUnwrap(
+      requestJSONObject(captured[1])["messages"] as? [[String: Any]]
+    )
+    XCTAssertEqual(normalMessages.map { $0["role"] as? String }, [
+      "system", "user", "assistant", "user",
+    ])
+    XCTAssertEqual(isolatedMessages.map { $0["role"] as? String }, [
+      "system", "user",
+    ])
+    XCTAssertFalse(
+      isolatedMessages.contains { ($0["content"] as? String)?.contains("old") == true }
+    )
   }
 
   func testStreamConvertsSSEEventsToOrderedChunks() async throws {
@@ -571,5 +631,22 @@ private final class LockedValue<Value>: @unchecked Sendable {
     lock.lock()
     defer { lock.unlock() }
     return value
+  }
+}
+
+private final class LockedArray<Element>: @unchecked Sendable {
+  private let lock = NSLock()
+  private var storage: [Element] = []
+
+  func append(_ value: Element) {
+    lock.lock()
+    storage.append(value)
+    lock.unlock()
+  }
+
+  var values: [Element] {
+    lock.lock()
+    defer { lock.unlock() }
+    return storage
   }
 }

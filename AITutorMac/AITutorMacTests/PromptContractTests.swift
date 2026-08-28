@@ -47,7 +47,10 @@ final class PromptContractTests: XCTestCase {
     let source = try XCTUnwrap(root["source"] as? [String: Any])
 
     XCTAssertEqual(root["learnerQuestion"] as? String, question)
-    XCTAssertEqual(source["text"] as? String, "API 是程序之间约定好的接口。")
+    XCTAssertEqual(
+      source["text"] as? String,
+      bounded("API 是程序之间约定好的接口。")
+    )
     XCTAssertTrue(package.systemInstruction.contains("answer it directly"))
   }
 
@@ -88,7 +91,40 @@ final class PromptContractTests: XCTestCase {
     let root = try userContentObject(package)
     let source = try XCTUnwrap(root["source"] as? [String: Any])
 
-    XCTAssertEqual(source["text"] as? String, text)
+    XCTAssertEqual(source["text"] as? String, bounded(text))
+  }
+
+  func testExcerptMetadataAndFactBoundaryReachPrompt() throws {
+    let text = "// AX_CODE_PREFIX_MARKER\nfunc example() {}"
+    let metadata = SemanticContentLengthMetadata(
+      contentType: .focusedCodeLike,
+      completeness: .excerpt,
+      lengthPolicy: .structureAwareCodeExcerpt,
+      originalCharacterCount: 8_000,
+      normalizedCharacterCount: 7_980,
+      sentCharacterCount: text.count,
+      excerptStart: 0,
+      excerptEnd: text.count,
+      droppedPrefixCount: 0,
+      droppedSuffixCount: 7_980 - text.count,
+      structureBoundary: .codeBlock
+    )
+    let package = try TutorPromptBuilder().build(
+      from: request(text: text, contentLength: metadata)
+    )
+    let root = try userContentObject(package)
+    let source = try XCTUnwrap(root["source"] as? [String: Any])
+
+    XCTAssertEqual(source["contentCompleteness"] as? String, "excerpt")
+    XCTAssertEqual(source["lengthPolicy"] as? String, "structure-aware-code-excerpt")
+    XCTAssertEqual(source["originalCharacterCount"] as? Int, 8_000)
+    XCTAssertEqual(source["excerptStart"] as? Int, 0)
+    XCTAssertEqual(source["excerptEnd"] as? Int, text.count)
+    XCTAssertEqual(source["structureBoundary"] as? String, "code-block")
+    XCTAssertTrue(package.systemInstruction.contains("only the declared range"))
+    XCTAssertTrue(package.constraints.contains(where: {
+      $0.contains("Do not claim that definitions")
+    }))
   }
 
   func testBuilderRejectsTextBeyondDomainLimit() {
@@ -119,7 +155,7 @@ final class PromptContractTests: XCTestCase {
     let source = try XCTUnwrap(root["source"] as? [String: Any])
 
     XCTAssertEqual(source["kind"] as? String, "untrustedExternalText")
-    XCTAssertEqual(source["text"] as? String, injection)
+    XCTAssertEqual(source["text"] as? String, bounded(injection))
     XCTAssertEqual(package.systemInstruction, baseline.systemInstruction)
     XCTAssertEqual(package.outputSchema, baseline.outputSchema)
     XCTAssertEqual(package.constraints, baseline.constraints)
@@ -225,7 +261,8 @@ final class PromptContractTests: XCTestCase {
     outputLanguage: String = "zh-Hans",
     detailLevel: TutorDetailLevel = .balanced,
     learnerQuestion: String? = nil,
-    schemaVersion: Int = TutorRequest.currentSchemaVersion
+    schemaVersion: Int = TutorRequest.currentSchemaVersion,
+    contentLength: SemanticContentLengthMetadata? = nil
   ) -> TutorRequest {
     TutorRequest(
       schemaVersion: schemaVersion,
@@ -242,7 +279,8 @@ final class PromptContractTests: XCTestCase {
         text: text,
         diffConfidence: .medium,
         flushReason: .sentenceComplete,
-        chunkCreatedAt: Date(timeIntervalSince1970: 1_900)
+        chunkCreatedAt: Date(timeIntervalSince1970: 1_900),
+        contentLength: contentLength
       ),
       learner: LearnerProfileSnapshot(
         level: level,
@@ -268,6 +306,10 @@ final class PromptContractTests: XCTestCase {
     return try XCTUnwrap(
       JSONSerialization.jsonObject(with: data) as? [String: Any]
     )
+  }
+
+  private func bounded(_ text: String) -> String {
+    "<CURRENT_CONTENT>\n\(text)\n</CURRENT_CONTENT>"
   }
 
   private func assertBuildError(

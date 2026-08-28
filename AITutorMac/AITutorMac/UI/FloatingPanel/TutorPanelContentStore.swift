@@ -26,6 +26,11 @@ struct TutorPanelErrorPresentation: Equatable, Sendable {
     message: "请先切回要解释的应用，保持内容窗口打开，然后再试一次。"
   )
 
+  static let ambiguousContent = TutorPanelErrorPresentation(
+    title: "请先点一下要解释的内容",
+    message: "我现在看到页面里有几段不同的内容，请点一下或选中你想让我解释的那一段。"
+  )
+
   static let modelNotConfigured = TutorPanelErrorPresentation(
     title: "还没有配置教学模型",
     message: "请先在 AI 模型设置中配置模型服务。",

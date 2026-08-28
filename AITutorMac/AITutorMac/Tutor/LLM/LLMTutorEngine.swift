@@ -37,8 +37,19 @@ struct LLMTutorEngine: TutorEngine, Sendable {
         latencyTrace?.recordModelIdentifier(
           rawResponse.providerMetadata.modelIdentifier
         )
+#if DEBUG
+        latencyTrace?.recordDebugAPIResponse(rawResponse)
+#endif
       } catch is CancellationError {
+#if DEBUG
+        latencyTrace?.recordDebugAPIError(LLMProviderError.cancelled)
+#endif
         throw LLMProviderError.cancelled
+      } catch {
+#if DEBUG
+        latencyTrace?.recordDebugAPIError(error)
+#endif
+        throw error
       }
 
       let response = try decoder.decode(rawResponse)

@@ -11,7 +11,7 @@ final class TextNormalizerTests: XCTestCase {
       "  Cafe\u{301}\r\nhello\u{200B}\t world \r\n\r\n\r\n next\u{00A0}line "
     )
 
-    XCTAssertEqual(result.displayText, "Café\nhello world\n\nnext line")
+    XCTAssertEqual(result.displayText, "  Café\nhello\t world\n\n next line")
     XCTAssertEqual(result.comparisonText, "Café hello world\n\nnext line")
   }
 

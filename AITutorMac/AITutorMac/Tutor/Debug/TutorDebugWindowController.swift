@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 final class TutorDebugWindowController: NSObject, NSWindowDelegate {
   private let coordinator: TutorCoordinator
+  private let traceStore: TutorDebugTraceStore
   private let realDemoController: TutorRealDemoController
   private let latencyBenchmarkController: TutorLatencyBenchmarkController
   private let streamModelBenchmarkController: TutorStreamModelBenchmarkController
@@ -12,11 +13,13 @@ final class TutorDebugWindowController: NSObject, NSWindowDelegate {
 
   init(
     coordinator: TutorCoordinator,
+    traceStore: TutorDebugTraceStore,
     realDemoController: TutorRealDemoController,
     latencyBenchmarkController: TutorLatencyBenchmarkController,
     streamModelBenchmarkController: TutorStreamModelBenchmarkController
   ) {
     self.coordinator = coordinator
+    self.traceStore = traceStore
     self.realDemoController = realDemoController
     self.latencyBenchmarkController = latencyBenchmarkController
     self.streamModelBenchmarkController = streamModelBenchmarkController
@@ -56,6 +59,10 @@ final class TutorDebugWindowController: NSObject, NSWindowDelegate {
     window.delegate = self
     window.contentViewController = NSHostingController(
       rootView: TabView {
+        TutorDebugInspectorView(store: traceStore)
+          .tabItem {
+            Label("Request Inspector", systemImage: "point.3.connected.trianglepath.dotted")
+          }
         TutorDebugView(coordinator: coordinator)
           .tabItem {
             Label("Fake Contract", systemImage: "shippingbox")

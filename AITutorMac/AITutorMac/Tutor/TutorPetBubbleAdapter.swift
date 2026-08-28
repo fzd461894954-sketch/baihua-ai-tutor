@@ -55,11 +55,16 @@ struct TutorPetBubbleAdapter: Sendable {
     )
   }
 
-  func makeErrorNotification() -> PetTutorNotification {
-    PetTutorNotification(
+  func makeErrorNotification(
+    for error: TutorPanelErrorPresentation = .requestFailed
+  ) -> PetTutorNotification {
+    let message = error == .ambiguousContent
+      ? "我看到几段不同的内容，请点一下或选中要解释的那一段。"
+      : "这次解释没有成功，点我重试。"
+    return PetTutorNotification(
       id: UUID(),
       title: "花花老师",
-      message: "这次解释没有成功，点我重试。",
+      message: message,
       priority: .tutorNotification,
       sourcePresentationID: nil
     )

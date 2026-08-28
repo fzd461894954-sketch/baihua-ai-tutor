@@ -151,6 +151,8 @@
 		010000000000000000000091 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000091 /* DesignTokens.swift */; };
 		010000000000000000000092 /* BubbleChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000092 /* BubbleChrome.swift */; };
 		010000000000000000000093 /* MenuBarIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000093 /* MenuBarIntentTests.swift */; };
+		010000000000000000000094 /* LocalSpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000094 /* LocalSpeechSynthesizer.swift */; };
+		010000000000000000000096 /* TutorDebugInspectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000096 /* TutorDebugInspectorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -175,6 +177,8 @@
 		020000000000000000000009 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 		02000000000000000000000A /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
 		02000000000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		020000000000000000000095 /* AITutorMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AITutorMac.entitlements; sourceTree = "<group>"; };
+		020000000000000000000096 /* TutorDebugInspectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorDebugInspectorTests.swift; sourceTree = "<group>"; };
 		02000000000000000000000C /* AITutorMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AITutorMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02000000000000000000000D /* AITutorMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AITutorMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		02000000000000000000000E /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
@@ -202,6 +206,7 @@
 		020000000000000000000024 /* VoiceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceController.swift; sourceTree = "<group>"; };
 		020000000000000000000025 /* VoiceDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceDebugView.swift; sourceTree = "<group>"; };
 		020000000000000000000026 /* VoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTests.swift; sourceTree = "<group>"; };
+		020000000000000000000094 /* LocalSpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSpeechSynthesizer.swift; sourceTree = "<group>"; };
 		020000000000000000000027 /* VoiceInputState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputState.swift; sourceTree = "<group>"; };
 		020000000000000000000028 /* SpeechAuthorizationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechAuthorizationController.swift; sourceTree = "<group>"; };
 		020000000000000000000029 /* SpeechRecognizerAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizerAdapter.swift; sourceTree = "<group>"; };
@@ -353,6 +358,7 @@
 				070000000000000000000019 /* Context */,
 				070000000000000000000022 /* Tutor */,
 				070000000000000000000008 /* Utilities */,
+				020000000000000000000095 /* AITutorMac.entitlements */,
 				02000000000000000000000B /* Info.plist */,
 			);
 			path = AITutorMac;
@@ -457,6 +463,7 @@
 				02000000000000000000008A /* TutorPetBubbleTests.swift */,
 				02000000000000000000008D /* TutorVoiceTests.swift */,
 				020000000000000000000093 /* MenuBarIntentTests.swift */,
+				020000000000000000000096 /* TutorDebugInspectorTests.swift */,
 			);
 			path = AITutorMacTests;
 			sourceTree = "<group>";
@@ -569,6 +576,7 @@
 			isa = PBXGroup;
 			children = (
 				020000000000000000000024 /* VoiceController.swift */,
+				020000000000000000000094 /* LocalSpeechSynthesizer.swift */,
 				020000000000000000000022 /* SpeechConfiguration.swift */,
 				020000000000000000000023 /* VoicePreferencesStore.swift */,
 				070000000000000000000017 /* Input */,
@@ -953,6 +961,7 @@
 				01000000000000000000001F /* SpeechConfiguration.swift in Sources */,
 				010000000000000000000020 /* VoicePreferencesStore.swift in Sources */,
 				010000000000000000000021 /* VoiceController.swift in Sources */,
+				010000000000000000000094 /* LocalSpeechSynthesizer.swift in Sources */,
 				010000000000000000000022 /* VoiceDebugView.swift in Sources */,
 				010000000000000000000024 /* VoiceInputState.swift in Sources */,
 				010000000000000000000025 /* SpeechAuthorizationController.swift in Sources */,
@@ -1069,6 +1078,7 @@
 				01000000000000000000008A /* TutorPetBubbleTests.swift in Sources */,
 				01000000000000000000008D /* TutorVoiceTests.swift in Sources */,
 				010000000000000000000093 /* MenuBarIntentTests.swift in Sources */,
+				010000000000000000000096 /* TutorDebugInspectorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1120,16 +1130,19 @@
 		0C0000000000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				AITUTOR_APP_BUNDLE_NAME = "AITutorMac Debug";
+				AITUTOR_APP_DISPLAY_NAME = "AITutorMac Debug";
+				CODE_SIGN_ENTITLEMENTS = AITutorMac/AITutorMac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 7;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AITutorMac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.2;
-				PRODUCT_BUNDLE_IDENTIFIER = com.baihuaai.AITutorMac;
+				MARKETING_VERSION = 0.1.6;
+				PRODUCT_BUNDLE_IDENTIFIER = com.baihuaai.AITutorMac.debug;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_VERSION = 5.0;
@@ -1139,15 +1152,18 @@
 		0C0000000000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				AITUTOR_APP_BUNDLE_NAME = AITutorMac;
+				AITUTOR_APP_DISPLAY_NAME = "花花老师";
+				CODE_SIGN_ENTITLEMENTS = AITutorMac/AITutorMac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 7;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AITutorMac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.2;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.baihuaai.AITutorMac;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = macosx;

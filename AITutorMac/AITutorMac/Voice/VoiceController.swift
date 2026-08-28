@@ -48,7 +48,7 @@ enum VoicePlaybackStatus: Equatable, Sendable {
     case .paused:
       return "朗读已暂停"
     case .unavailable:
-      return "系统语音暂时不可用"
+      return "语音暂时不可用"
     }
   }
 }
@@ -56,12 +56,13 @@ enum VoicePlaybackStatus: Equatable, Sendable {
 @MainActor
 @Observable
 final class VoiceController {
-  static let unavailableMessage = "当前系统语音暂时不可用，请选择其他声音。"
+  static let unavailableMessage = "当前语音暂时不可用，请选择其他声音。"
 
   private(set) var configuration: SpeechConfiguration
   private(set) var availableVoices: [SpeechVoiceOption]
   private(set) var status: VoicePlaybackStatus = .idle
   private(set) var userMessage: String?
+  private(set) var localServiceStatus: LocalSpeechServiceStatus?
 
   @ObservationIgnored
   private let synthesizer: any SpeechSynthesizing
@@ -91,6 +92,12 @@ final class VoiceController {
     availableVoices = synthesizer.availableVoices
     synthesizer.eventHandler = { [weak self] event in
       self?.handle(event)
+    }
+    if let monitor = synthesizer as? any LocalSpeechServiceMonitoring {
+      localServiceStatus = monitor.localServiceStatus
+      monitor.localServiceStatusHandler = { [weak self] status in
+        self?.localServiceStatus = status
+      }
     }
   }
 
@@ -148,9 +155,9 @@ final class VoiceController {
 
     do {
       try synthesizer.speak(request)
-      AppLogger.voice.info("System speech request started")
+      AppLogger.voice.info("Speech request started")
     } catch {
-      AppLogger.voice.error("System speech request could not start")
+      AppLogger.voice.error("Speech request could not start")
       activeRequestID = nil
       setStatus(.unavailable)
       userMessage = Self.unavailableMessage
@@ -168,7 +175,7 @@ final class VoiceController {
     setStatus(.idle)
     userMessage = nil
     restorePetState()
-    AppLogger.voice.info("System speech stopped by user")
+    AppLogger.voice.info("Speech stopped by user")
   }
 
   func pause() {
@@ -189,6 +196,24 @@ final class VoiceController {
 
   func refreshAvailableVoices() {
     availableVoices = synthesizer.availableVoices
+    (synthesizer as? any LocalSpeechServiceMonitoring)?.refreshLocalServiceStatus()
+  }
+
+  func prepareLocalService() {
+    (synthesizer as? any LocalSpeechServiceMonitoring)?.prepareLocalService()
+  }
+
+  func shutdownLocalService() {
+    (synthesizer as? any LocalSpeechServiceMonitoring)?.shutdownLocalService()
+  }
+
+  var selectedVoiceUsesLocalModel: Bool {
+    guard let voiceIdentifier = configuration.voiceIdentifier else {
+      return availableVoices.contains(where: {
+        $0.language == "zh-CN" && $0.identifier.hasPrefix(LocalQwenVoice.identifierPrefix)
+      })
+    }
+    return voiceIdentifier.hasPrefix(LocalQwenVoice.identifierPrefix)
   }
 
   func selectVoice(identifier: String?) {
@@ -236,7 +261,7 @@ final class VoiceController {
       activeRequestID = nil
       setStatus(.idle)
       restorePetState()
-      AppLogger.voice.info("System speech request ended")
+      AppLogger.voice.info("Speech request ended")
     }
   }
 

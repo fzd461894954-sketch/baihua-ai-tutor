@@ -16,12 +16,36 @@ struct VoiceDebugView: View {
     Form {
       Section("语音") {
         Picker("声音", selection: voiceSelection) {
-          Text("自动（简体中文优先）").tag("")
+          Text("自动（本地 Qwen3 优先）").tag("")
           ForEach(voiceController.availableVoices) { voice in
             Text("\(voice.name) · \(voice.language)").tag(voice.identifier)
           }
         }
         .accessibilityHint("优先使用你选择的声音，不可用时自动回退")
+
+        if let localStatus = voiceController.localServiceStatus {
+          HStack {
+            Label(localStatus.displayText, systemImage: localStatus.systemImageName)
+              .foregroundStyle(localStatus == .ready ? .green : .secondary)
+
+            Spacer()
+
+            Button(localStatus == .ready ? "重新检测" : "启动本地语音") {
+              voiceController.prepareLocalService()
+            }
+            .disabled(localStatus == .starting || localStatus == .notInstalled)
+          }
+
+          if localStatus == .notInstalled {
+            Text("请先运行项目中的 scripts/setup-local-voice.sh。安装完成后重新打开应用。")
+              .font(.callout)
+              .foregroundStyle(.secondary)
+          } else if localStatus != .ready {
+            Text("本地模型不可用时会自动使用 Apple 系统中文语音，不会中断朗读。")
+              .font(.callout)
+              .foregroundStyle(.secondary)
+          }
+        }
 
         settingSlider(
           title: "语速",
@@ -88,7 +112,7 @@ struct VoiceDebugView: View {
 #endif
 
       Section("隐私") {
-        Text("朗读由 macOS 系统语音完成。文字不会发送给第三方 TTS 服务，也不会保存为音频文件。")
+        Text(voicePrivacyText)
           .font(.callout)
           .foregroundStyle(.secondary)
       }
@@ -154,6 +178,13 @@ struct VoiceDebugView: View {
       get: { voiceController.configuration.volume },
       set: { voiceController.setVolume($0) }
     )
+  }
+
+  private var voicePrivacyText: String {
+    if voiceController.selectedVoiceUsesLocalModel {
+      return "朗读文字只发送到这台 Mac 上的 127.0.0.1 本地 Qwen3-TTS 服务。服务不可用时自动使用 Apple 系统语音；应用不会保存生成的音频。"
+    }
+    return "朗读由 Apple 系统语音完成。文字不会发送给第三方 TTS 服务，也不会保存为音频文件。"
   }
 
   private var inputLocaleSelection: Binding<String> {

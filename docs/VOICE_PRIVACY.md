@@ -83,3 +83,13 @@ Starting Voice Input immediately stops active teacher text-to-speech before the
 microphone starts. The interrupted speech is not resumed. Starting teacher speech
 also cancels active Voice Input, so the microphone and speaker workflows never run
 concurrently.
+
+## Local teacher speech
+
+When a local Qwen3 voice is selected, teacher text is sent to the MLX-Audio service
+at `127.0.0.1` and never to a third-party TTS API. The service returns WAV bytes in
+memory. The app plays those bytes and does not save them as an audio file.
+
+If the local runtime is not installed, cannot start, or fails to synthesize a
+request, the app automatically uses an installed Apple `zh-CN` system voice. The
+teacher text is never logged in either path.

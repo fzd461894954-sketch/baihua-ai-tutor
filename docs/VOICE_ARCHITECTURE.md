@@ -30,7 +30,15 @@ tests.
 
 ## Text-to-speech
 
-`SystemSpeechSynthesizer` adapts `AVSpeechSynthesizer`. Each utterance has a UUID,
+`HybridSpeechSynthesizer` exposes local Qwen3 voices before installed system voices.
+For a Qwen voice it sends text only to the loopback MLX-Audio endpoint, receives WAV,
+and plays it with `AVAudioPlayer`. The app starts the isolated local service when it
+is installed and stops an app-owned service process during shutdown. A launch,
+health, generation, or playback failure falls back to an installed `zh-CN` Apple
+voice with the same request UUID.
+
+`SystemSpeechSynthesizer` adapts `AVSpeechSynthesizer` and remains the explicit
+system-voice path and automatic local failure fallback. Each utterance has a UUID,
 so a stale completion from a replaced utterance cannot finish the current one.
 There is no application-level speech queue.
 

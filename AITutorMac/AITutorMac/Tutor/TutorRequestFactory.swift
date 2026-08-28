@@ -84,7 +84,8 @@ struct TutorRequestFactory: Sendable {
         text: chunk.text,
         diffConfidence: chunk.confidence,
         flushReason: chunk.flushReason,
-        chunkCreatedAt: chunk.createdAt
+        chunkCreatedAt: chunk.createdAt,
+        contentLength: chunk.contentLength
       ),
       learner: learner,
       output: effectiveOutput,

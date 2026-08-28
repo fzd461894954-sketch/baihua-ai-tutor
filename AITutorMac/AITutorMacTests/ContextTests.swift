@@ -132,6 +132,16 @@ final class ContextTests: XCTestCase {
     )
     XCTAssertEqual(
       classifier.classify(
+        snapshot(
+          name: "WorkBuddy",
+          bundleIdentifier: "com.workbuddy.workbuddy",
+          pid: 117
+        )
+      ),
+      .workBuddy
+    )
+    XCTAssertEqual(
+      classifier.classify(
         snapshot(name: "Safari", bundleIdentifier: "com.apple.Safari", pid: 115)
       ),
       .browser

@@ -3,6 +3,7 @@ import Foundation
 enum ApplicationCategory: String, Equatable, Sendable {
   case chatGPT
   case codex
+  case workBuddy
   case browser
   case xcode
   case other
@@ -14,6 +15,7 @@ struct TargetApplicationClassifier {
   init(
     categoriesByBundleIdentifier: [String: ApplicationCategory] = [
       "com.openai.codex": .codex,
+      "com.workbuddy.workbuddy": .workBuddy,
       "com.apple.Safari": .browser,
       "com.google.Chrome": .browser,
       "com.apple.dt.Xcode": .xcode,
