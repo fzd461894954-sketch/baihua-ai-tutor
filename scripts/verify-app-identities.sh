@@ -54,7 +54,15 @@ assert_setting "${release_settings}" Release PRODUCT_BUNDLE_IDENTIFIER \
   com.baihuaai.AITutorMac
 assert_setting "${release_settings}" Release AITUTOR_APP_DISPLAY_NAME \
   '花花老师'
-assert_setting "${release_settings}" Release AITUTOR_APP_BUNDLE_NAME AITutorMac
+assert_setting "${release_settings}" Release AITUTOR_APP_BUNDLE_NAME '花花老师'
+assert_setting "${debug_settings}" Debug PRODUCT_NAME AITutorMac
+assert_setting "${debug_settings}" Debug EXECUTABLE_NAME AITutorMac
+assert_setting "${debug_settings}" Debug PRODUCT_MODULE_NAME AITutorMac
+assert_setting "${release_settings}" Release PRODUCT_NAME '花花老师'
+assert_setting "${release_settings}" Release EXECUTABLE_NAME AITutorMac
+assert_setting "${release_settings}" Release PRODUCT_MODULE_NAME AITutorMac
+assert_setting "${debug_settings}" Debug ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
+assert_setting "${release_settings}" Release ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
 
 for settings_and_name in debug release; do
   if [[ "${settings_and_name}" == debug ]]; then
@@ -65,8 +73,6 @@ for settings_and_name in debug release; do
     configuration=Release
   fi
 
-  assert_setting "${selected_settings}" "${configuration}" PRODUCT_NAME AITutorMac
-  assert_setting "${selected_settings}" "${configuration}" EXECUTABLE_NAME AITutorMac
   assert_setting "${selected_settings}" "${configuration}" CODE_SIGN_ENTITLEMENTS \
     AITutorMac/AITutorMac.entitlements
   assert_setting "${selected_settings}" "${configuration}" CODE_SIGN_IDENTITY -
