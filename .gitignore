@@ -8,6 +8,9 @@ build/
 Build/
 .build/
 *.xcarchive
+*.profraw
+*.profdata
+artifacts/
 
 # Local configuration, credentials, and signing material
 .env
@@ -22,3 +25,6 @@ API Keys/
 
 # macOS metadata
 .DS_Store
+
+# Local assistant workspace state
+.workbuddy/

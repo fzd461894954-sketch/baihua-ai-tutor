@@ -1,3 +1,4 @@
+import AppKit
 import QuartzCore
 import XCTest
 
@@ -120,6 +121,58 @@ final class PetStateTests: XCTestCase {
     XCTAssertEqual(animationController.debugActiveAnimationCount, 0)
     XCTAssertTrue(CATransform3DIsIdentity(animationController.debugModelTransform))
     XCTAssertEqual(animationController.debugModelOpacity, 1, accuracy: 0.0001)
+  }
+
+  func testCustomStaticPetReloadKeepsStateAndSupportsAllEightAnimations() throws {
+    let suiteName = "PetStateTests.CustomReload.\(UUID().uuidString)"
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    let appState = AppState()
+    let stateController = PetStateController()
+    let animationController = PetAnimationController(reduceMotionProvider: { false })
+    let voiceController = VoiceController(petStateController: stateController)
+    let speechInputController = SpeechInputController(
+      authorizationController: SpeechAuthorizationController(),
+      recognizerFactory: SystemSpeechRecognizerFactory(),
+      voiceOutputController: voiceController
+    )
+    let windowController = PetWindowController(
+      appState: appState,
+      pet: .officialFlowerBunny,
+      petImage: NSImage(named: "official_flower_bunny"),
+      store: PetStore(defaults: defaults),
+      stateController: stateController,
+      speechInputController: speechInputController,
+      tutorNotificationCenter: TutorPetNotificationCenter(),
+      animationController: animationController,
+      onOpenTutor: {}
+    )
+    let customPet = PetModel(
+      id: "user_\(UUID().uuidString.lowercased())",
+      name: "测试角色",
+      source: .userImported,
+      type: .staticImage,
+      assetLocation: "pet.png",
+      createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+      scale: 1
+    )
+
+    windowController.start()
+    stateController.transition(to: .thinking)
+    windowController.reloadPet(
+      customPet,
+      image: NSImage(named: "official_flower_bunny")
+    )
+
+    XCTAssertEqual(stateController.currentState, .thinking)
+    for state in PetState.allCases {
+      stateController.transition(to: state)
+      XCTAssertEqual(stateController.currentState, state)
+      XCTAssertLessThanOrEqual(animationController.debugActiveAnimationCount, 1)
+    }
+
+    windowController.stop()
   }
 }
 

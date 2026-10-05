@@ -1,7 +1,7 @@
 # Pet State Specification
 
-> 版本：STEP 1.6  
-> 更新日期：2026-08-14  
+> 版本：STEP 1.9
+> 更新日期：2026-08-23
 > 适用资产：Static Pet V1 通用程序动画
 
 ## 1. 状态表
@@ -38,15 +38,16 @@ success → idle
 
 ## 3. 点击规则
 
-| State | 单击 | 双击 |
-|---|---|---|
-| Idle | 原有欢迎 Bubble | 打开 Tutor Panel |
-| Watching / Thinking | “我正在理解当前内容。” | 打开 Tutor Panel |
-| Speaking | “我正在给你解释。” | 打开 Tutor Panel |
-| Needs Input | 打开 Tutor Panel | 打开 Tutor Panel |
-| Warning | 打开 Tutor Panel | 打开 Tutor Panel |
-| Success | “完成啦。” | 打开 Tutor Panel |
-| Error | 打开 Tutor Panel | 打开 Tutor Panel |
+所有状态使用同一套即时交互，避免角色在不同状态下表现得像不同入口：
+
+| 操作 | 结果 |
+|---|---|
+| 单击 | 立即在角色旁展开教学卡片；已经展开时收起 |
+| 双击 | 不再绑定独立功能，避免单击等待系统双击间隔 |
+| 拖动 | 移动角色，不触发教学卡片 |
+| 右键 | 打开角色菜单 |
+
+教学卡片承载当前解释、解释当前内容、文字提问、点按式语音提问和朗读。独立教学窗仅作为菜单栏与 `Option-Space` 的备选入口。
 
 ## 4. 转换不变式
 

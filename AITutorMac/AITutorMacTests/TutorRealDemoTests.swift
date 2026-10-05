@@ -1,0 +1,695 @@
+#if DEBUG
+import XCTest
+
+@testable import AITutorMac
+
+@MainActor
+final class TutorRealDemoTests: XCTestCase {
+  func testArkEndpointUsesJSONObjectCompatibilityMode() throws {
+    let arkEndpoint = try XCTUnwrap(
+      URL(string: "https://ark.cn-beijing.volces.com/api/v3/chat/completions")
+    )
+    let genericEndpoint = try XCTUnwrap(
+      URL(string: "https://provider.example/v1/chat/completions")
+    )
+
+    XCTAssertEqual(tutorRealDemoResponseFormat(for: arkEndpoint), .jsonObject)
+    XCTAssertEqual(tutorRealDemoResponseFormat(for: genericEndpoint), .jsonSchema)
+  }
+
+  func testLiveArkTutorContractWhenExplicitlyConfigured() async throws {
+    guard
+      let apiKey = ProcessInfo.processInfo.environment["ARK_E2E_API_KEY"],
+      !apiKey.isEmpty
+    else {
+      throw XCTSkip("ARK_E2E_API_KEY is intentionally absent")
+    }
+    let controller = TutorRealDemoController()
+    controller.configuration = DebugLLMConfiguration(
+      endpoint: "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+      model: "doubao-seed-evolving",
+      apiKey: apiKey
+    )
+    controller.selectCase(id: "api")
+
+    controller.explain()
+    await waitForTerminalState(controller, timeoutNanoseconds: 90_000_000_000)
+
+    let record = try XCTUnwrap(controller.latestRunRecord)
+    let quality = try XCTUnwrap(controller.latestQualityReport)
+    XCTAssertEqual(controller.state, .succeeded, "failure=\(String(describing: controller.latestFailure))")
+    XCTAssertEqual(record.outcome, .success)
+    XCTAssertNotNil(controller.latestPresentation)
+    print(
+      "ARK_E2E_METRICS model=doubao-seed-evolving "
+        + "latency_ms=\(record.latencyMilliseconds) "
+        + "input_tokens=\(record.inputTokenCount.map(String.init) ?? "unavailable") "
+        + "output_tokens=\(record.outputTokenCount.map(String.init) ?? "unavailable") "
+        + "outcome=\(record.outcome.rawValue) quality=\(quality.rating.rawValue)"
+    )
+    controller.shutdown()
+  }
+
+  func testLiveStreamModelQualityMatrixFromSavedSettingsWhenExplicitlyEnabled() async throws {
+    guard ProcessInfo.processInfo.environment["TUTOR_PERF02_USE_KEYCHAIN"] == "1" else {
+      throw XCTSkip("TUTOR_PERF02_USE_KEYCHAIN is intentionally absent")
+    }
+
+    let providerFactory = TutorProviderFactory(
+      settingsStore: LLMProviderSettingsStore(),
+      credentialStore: KeychainCredentialStore()
+    )
+    let controller = TutorStreamModelBenchmarkController(providerFactory: providerFactory)
+    controller.selectedMode = .streaming
+    controller.responseFormat = .jsonObject
+    controller.maxOutputTokens = TutorResponseBudget.compactLesson.maximumOutputTokens
+    controller.candidateModelsText =
+      ProcessInfo.processInfo.environment["TUTOR_PERF02_CANDIDATE_MODEL"] ?? ""
+
+    controller.runQualityMatrix()
+    await waitForStreamModelBenchmarkTerminalState(
+      controller,
+      timeoutNanoseconds: 900_000_000_000
+    )
+
+    let expectedModelCount = controller.candidateModelsText.isEmpty ? 1 : 2
+    XCTAssertEqual(
+      controller.records.count,
+      TutorEvaluationDataset.cases.count * expectedModelCount
+    )
+    for record in controller.records {
+      let metrics = record.metrics
+      let signals = record.qualitySignals
+      print(
+        "PERF02_QUALITY case=\(record.caseID) model=\(record.model) "
+          + "format=\(record.responseFormat.rawValue) mode=\(record.mode.rawValue) "
+          + "ttfb_ms=\(milliseconds(metrics.timeToFirstByte)) "
+          + "first_event_ms=\(milliseconds(metrics.timeToFirstSSEEvent)) "
+          + "first_content_ms=\(milliseconds(metrics.timeToFirstModelContent)) "
+          + "full_ms=\(milliseconds(metrics.totalTutorLatency)) "
+          + "input_tokens=\(metrics.inputTokens.map(String.init) ?? "unavailable") "
+          + "output_tokens=\(metrics.outputTokens.map(String.init) ?? "unavailable") "
+          + "quality=\(record.qualityRating?.rawValue ?? "failed") "
+          + "unsupported_facts=\(signals?.unsupportedFacts.rawValue ?? "unavailable") "
+          + "missing_structure=\(signals?.missingStructure.rawValue ?? "unavailable") "
+          + "verbosity=\(signals?.verbosity.rawValue ?? "unavailable") "
+          + "source_alignment=\(signals?.sourceAlignment.rawValue ?? "unavailable")"
+      )
+    }
+  }
+
+  func testLiveStreamModelFiveRunComparisonFromSavedSettingsWhenExplicitlyEnabled() async throws {
+    guard ProcessInfo.processInfo.environment["TUTOR_PERF02_USE_KEYCHAIN"] == "1" else {
+      throw XCTSkip("TUTOR_PERF02_USE_KEYCHAIN is intentionally absent")
+    }
+
+    let providerFactory = TutorProviderFactory(
+      settingsStore: LLMProviderSettingsStore(),
+      credentialStore: KeychainCredentialStore()
+    )
+    let controller = TutorStreamModelBenchmarkController(providerFactory: providerFactory)
+    controller.selectedCaseID = "api"
+    controller.selectedMode = .streaming
+    controller.responseFormat = .jsonObject
+    controller.maxOutputTokens = TutorResponseBudget.compactLesson.maximumOutputTokens
+    controller.candidateModelsText =
+      ProcessInfo.processInfo.environment["TUTOR_PERF02_CANDIDATE_MODEL"] ?? ""
+
+    controller.runModelComparison()
+    await waitForStreamModelBenchmarkTerminalState(
+      controller,
+      timeoutNanoseconds: 900_000_000_000
+    )
+
+    XCTAssertEqual(controller.records.count, TutorStreamModelBenchmarkController.defaultRunCount * 2)
+    for record in controller.records {
+      let metrics = record.metrics
+      print(
+        "PERF02_MODEL run=\(record.runNumber) model=\(record.model) "
+          + "format=\(record.responseFormat.rawValue) mode=\(record.mode.rawValue) "
+          + "ttfb_ms=\(milliseconds(metrics.timeToFirstByte)) "
+          + "first_event_ms=\(milliseconds(metrics.timeToFirstSSEEvent)) "
+          + "first_content_ms=\(milliseconds(metrics.timeToFirstModelContent)) "
+          + "full_ms=\(milliseconds(metrics.totalTutorLatency)) "
+          + "input_tokens=\(metrics.inputTokens.map(String.init) ?? "unavailable") "
+          + "output_tokens=\(metrics.outputTokens.map(String.init) ?? "unavailable") "
+          + "quality=\(record.qualityRating?.rawValue ?? "failed") "
+          + "success=\(record.succeeded)"
+      )
+    }
+  }
+
+  func testValidJSONCompletesClosedLoopAndRecordsPrivacySafeUsage() async throws {
+    let fake = FakeLLMProvider(behavior: .success)
+    let provider = DecoratedTutorDemoProvider(base: fake, decoration: .usage)
+    let controller = makeController(provider: provider)
+    let privateSource = "PRIVATE_BODY_API_仅用于本次请求"
+    configure(controller, source: privateSource)
+
+    controller.explain()
+    await waitForTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .succeeded)
+    XCTAssertEqual(controller.latestResponse?.schemaVersion, TutorResponse.currentSchemaVersion)
+    XCTAssertEqual(controller.latestPresentation?.outcome, .lesson)
+    let record = try XCTUnwrap(controller.latestRunRecord)
+    XCTAssertEqual(record.outcome, .success)
+    XCTAssertEqual(record.inputTokenCount, 12)
+    XCTAssertEqual(record.outputTokenCount, 7)
+    XCTAssertEqual(record.totalTokenCount, 19)
+    XCTAssertFalse(String(reflecting: record).contains(privateSource))
+  }
+
+  func testInvalidJSONIsReportedAsDecodeFailure() async {
+    let fake = FakeLLMProvider(behavior: .malformedJSON)
+    let provider = DecoratedTutorDemoProvider(base: fake, decoration: .usage)
+    let controller = makeController(provider: provider)
+    configure(controller)
+
+    controller.explain()
+    await waitForTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .failed)
+    XCTAssertEqual(controller.latestFailure, .invalidJSON)
+    XCTAssertNil(controller.latestResponse)
+    XCTAssertEqual(controller.latestRunRecord?.totalTokenCount, 19)
+  }
+
+  func testTimeoutIsRecordedWithoutResponseBody() async {
+    let controller = makeController(provider: FakeLLMProvider(behavior: .timeout))
+    configure(controller)
+
+    controller.explain()
+    await waitForTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .failed)
+    XCTAssertEqual(controller.latestFailure, .timeout)
+    XCTAssertEqual(controller.latestRunRecord?.outcome, .failure)
+    XCTAssertNil(controller.latestRunRecord?.totalTokenCount)
+  }
+
+  func testCancellationCancelsProviderAndRecordsCancelledRun() async {
+    let provider = FakeLLMProvider(
+      behavior: .success,
+      responseDelayNanoseconds: 5_000_000_000
+    )
+    let controller = makeController(provider: provider)
+    configure(controller)
+    controller.explain()
+    await waitForGenerateCall(provider)
+
+    controller.cancel()
+    await waitForCancelCall(provider)
+
+    XCTAssertEqual(controller.state, .cancelled)
+    XCTAssertEqual(controller.latestRunRecord?.outcome, .cancelled)
+    XCTAssertNil(controller.latestPresentation)
+    let cancelCallCount = await provider.cancelCallCount
+    XCTAssertGreaterThanOrEqual(cancelCallCount, 1)
+  }
+
+  func testLongValidResponseIsValidatedThenPresentationIsTruncated() async throws {
+    let fake = FakeLLMProvider(behavior: .success)
+    let provider = DecoratedTutorDemoProvider(base: fake, decoration: .longExplanation)
+    let controller = makeController(provider: provider)
+    configure(controller)
+
+    controller.explain()
+    await waitForTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .succeeded)
+    let quality = try XCTUnwrap(controller.latestQualityReport)
+    XCTAssertEqual(quality.explanationCharacterCount, 1_500)
+    let presentation = try XCTUnwrap(controller.latestPresentation)
+    XCTAssertEqual(presentation.plainExplanation.count, 1_200)
+    XCTAssertTrue(presentation.didTruncateContent)
+  }
+
+  func testChineseExplanationQualitySignalUsesValidatedTutorResponse() async throws {
+    let controller = makeController(provider: FakeLLMProvider(behavior: .success))
+    configure(controller, source: "API 是什么？")
+
+    controller.explain()
+    await waitForTerminalState(controller)
+
+    let quality = try XCTUnwrap(controller.latestQualityReport)
+    XCTAssertTrue(quality.containsChineseExplanation)
+    XCTAssertGreaterThan(quality.chineseCharacterCount, 4)
+  }
+
+  func testAnalogyGenerationQualitySignal() async throws {
+    let controller = makeController(provider: FakeLLMProvider(behavior: .success))
+    configure(controller, source: "请解释 API")
+
+    controller.explain()
+    await waitForTerminalState(controller)
+
+    let quality = try XCTUnwrap(controller.latestQualityReport)
+    XCTAssertTrue(quality.hasAnalogy)
+    XCTAssertNotNil(controller.latestPresentation?.analogy)
+  }
+
+  func testGlossaryGenerationQualitySignal() async throws {
+    let controller = makeController(provider: FakeLLMProvider(behavior: .success))
+    configure(controller, source: "请解释 API")
+
+    controller.explain()
+    await waitForTerminalState(controller)
+
+    let quality = try XCTUnwrap(controller.latestQualityReport)
+    XCTAssertGreaterThan(quality.glossaryTermCount, 0)
+    XCTAssertFalse(try XCTUnwrap(controller.latestPresentation).terms.isEmpty)
+  }
+
+  func testSameDatasetCaseMultipleRunsReuseSemanticChunkIdentity() async throws {
+    let provider = FakeLLMProvider(behavior: .success)
+    let controller = makeController(provider: provider)
+    controller.configuration = DebugLLMConfiguration(
+      endpoint: "https://example.test/v1/chat/completions",
+      model: "test-model",
+      apiKey: "runtime-key"
+    )
+    controller.selectCase(id: "api")
+    let expectedChunkID = try XCTUnwrap(controller.selectedCase?.semanticChunk.id)
+
+    controller.explain()
+    await waitForTerminalState(controller)
+    let firstChunkID = controller.latestResponse?.sourceChunkID
+
+    controller.explain()
+    await waitForTerminalState(controller)
+    let secondChunkID = controller.latestResponse?.sourceChunkID
+    let generateCallCount = await provider.generateCallCount
+
+    XCTAssertEqual(firstChunkID, expectedChunkID)
+    XCTAssertEqual(secondChunkID, expectedChunkID)
+    XCTAssertEqual(generateCallCount, 2)
+    XCTAssertEqual(controller.runRecords.count, 2)
+  }
+
+  func testShutdownClearsRuntimeCredentialsAndTransientBodies() async {
+    let controller = makeController(
+      provider: FakeLLMProvider(
+        behavior: .success,
+        responseDelayNanoseconds: 5_000_000_000
+      )
+    )
+    configure(controller)
+    controller.explain()
+
+    controller.shutdown()
+
+    XCTAssertEqual(controller.configuration, DebugLLMConfiguration())
+    XCTAssertTrue(controller.sourceText.isEmpty)
+    XCTAssertTrue(controller.runRecords.isEmpty)
+    XCTAssertNil(controller.latestResponse)
+    XCTAssertNil(controller.latestPresentation)
+    XCTAssertEqual(controller.state, .idle)
+  }
+
+  func testDismissPreservesRuntimeConfigurationButClearsTransientBodies() async {
+    let controller = makeController(
+      provider: FakeLLMProvider(
+        behavior: .success,
+        responseDelayNanoseconds: 5_000_000_000
+      )
+    )
+    configure(controller)
+    let expectedConfiguration = controller.configuration
+    controller.explain()
+
+    controller.dismiss()
+
+    XCTAssertEqual(controller.configuration, expectedConfiguration)
+    XCTAssertTrue(controller.sourceText.isEmpty)
+    XCTAssertTrue(controller.runRecords.isEmpty)
+    XCTAssertNil(controller.latestResponse)
+    XCTAssertNil(controller.latestPresentation)
+    XCTAssertEqual(controller.state, .idle)
+  }
+
+  func testResponsesEndpointIsRejectedBeforeProviderCall() {
+    let controller = makeController(provider: FakeLLMProvider(behavior: .success))
+    controller.configuration = DebugLLMConfiguration(
+      endpoint: "https://ark.cn-beijing.volces.com/api/v3/responses",
+      model: "test-model",
+      apiKey: "runtime-key"
+    )
+    controller.sourceText = "API 是一组让不同软件互相沟通的约定。"
+
+    controller.explain()
+
+    XCTAssertEqual(controller.state, .failed)
+    XCTAssertEqual(controller.latestFailure, .unsupportedEndpoint)
+  }
+
+  func testLatencyBenchmarkRunsSameSyntheticCaseFiveTimes() async throws {
+    let provider = FakeLLMProvider(behavior: .success)
+    let providerFactory = BenchmarkProviderFactoryStub(provider: provider)
+    let controller = TutorLatencyBenchmarkController(
+      providerFactory: providerFactory,
+      providerBuilder: { _ in provider }
+    )
+    controller.selectedCaseID = "api"
+
+    controller.runFiveTimes()
+    await waitForBenchmarkTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .completed)
+    XCTAssertEqual(controller.records.count, 5)
+    XCTAssertEqual(controller.completedRuns, 5)
+    XCTAssertEqual(controller.records.map(\.runNumber), [1, 2, 3, 4, 5])
+    XCTAssertTrue(controller.records.allSatisfy { $0.caseID == "api" })
+    XCTAssertTrue(controller.records.allSatisfy(\.succeeded))
+    XCTAssertTrue(controller.records.allSatisfy { $0.metrics.promptSize != nil })
+    XCTAssertEqual(controller.summary.total?.sampleCount, 5)
+    let generateCallCount = await provider.generateCallCount
+    XCTAssertEqual(generateCallCount, 5)
+  }
+
+  func testStreamModelBenchmarkComparesBothModesWithSameRequest() async throws {
+    let provider = FakeLLMProvider(behavior: .success)
+    let providerFactory = BenchmarkProviderFactoryStub(provider: provider)
+    let controller = TutorStreamModelBenchmarkController(
+      providerFactory: providerFactory,
+      providerBuilder: { _ in provider }
+    )
+    controller.selectedCaseID = "api"
+    controller.responseFormat = .jsonObject
+
+    controller.runModeComparison()
+    await waitForStreamModelBenchmarkTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .completed)
+    XCTAssertEqual(controller.records.count, 10)
+    XCTAssertEqual(controller.configurationSummaries.count, 2)
+    let generateCallCount = await provider.generateCallCount
+    let streamCallCount = await provider.streamCallCount
+    XCTAssertEqual(generateCallCount, 5)
+    XCTAssertEqual(streamCallCount, 5)
+    for pairStart in stride(from: 0, to: controller.records.count, by: 2) {
+      let pair = Array(controller.records[pairStart..<(pairStart + 2)])
+      XCTAssertEqual(pair.map(\.mode), [.nonStreaming, .streaming])
+      XCTAssertEqual(Set(pair.map(\.requestID)).count, 1)
+      XCTAssertTrue(pair.allSatisfy(\.succeeded))
+      XCTAssertTrue(pair.allSatisfy { $0.qualitySignals != nil })
+    }
+  }
+
+  func testStreamModelBenchmarkRequiresConfirmedCandidateForModelComparison() {
+    let provider = FakeLLMProvider(behavior: .success)
+    let controller = TutorStreamModelBenchmarkController(
+      providerFactory: BenchmarkProviderFactoryStub(provider: provider),
+      providerBuilder: { _ in provider }
+    )
+
+    controller.runModelComparison()
+
+    XCTAssertEqual(controller.state, .failed)
+    XCTAssertTrue(controller.records.isEmpty)
+    XCTAssertNotNil(controller.failureMessage)
+  }
+
+  func testStreamModelBenchmarkUsesInMemoryCandidateWithoutChangingBaseSettings() async {
+    let provider = FakeLLMProvider(behavior: .success)
+    let factory = BenchmarkProviderFactoryStub(provider: provider)
+    let controller = TutorStreamModelBenchmarkController(
+      providerFactory: factory,
+      providerBuilder: { _ in provider }
+    )
+    controller.candidateModelsText = "confirmed-fast-model"
+    controller.selectedMode = .streaming
+    controller.responseFormat = .jsonObject
+
+    controller.runModelComparison()
+    await waitForStreamModelBenchmarkTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .completed)
+    XCTAssertEqual(controller.records.count, 10)
+    XCTAssertEqual(Set(controller.records.map(\.model)), [
+      "benchmark-model", "confirmed-fast-model",
+    ])
+    XCTAssertEqual(try? factory.configurationSnapshot().model, "benchmark-model")
+  }
+
+  func testStreamModelQualityMatrixRunsAllCasesForSelectedFormat() async {
+    let provider = FakeLLMProvider(behavior: .success)
+    let controller = TutorStreamModelBenchmarkController(
+      providerFactory: BenchmarkProviderFactoryStub(provider: provider),
+      providerBuilder: { _ in provider }
+    )
+    controller.selectedMode = .streaming
+    controller.responseFormat = .jsonObject
+
+    controller.runQualityMatrix()
+    await waitForStreamModelBenchmarkTerminalState(controller)
+
+    XCTAssertEqual(controller.state, .completed)
+    XCTAssertEqual(controller.records.count, TutorEvaluationDataset.cases.count)
+    XCTAssertEqual(Set(controller.records.map(\.responseFormat)), [.jsonObject])
+    XCTAssertTrue(controller.records.allSatisfy { $0.qualitySignals != nil })
+    XCTAssertTrue(controller.records.allSatisfy(\.succeeded))
+  }
+
+  func testLatencyDistributionIncludesNearestRankP90() throws {
+    let distribution = try XCTUnwrap(
+      TutorLatencyDistribution(samples: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    )
+
+    XCTAssertEqual(distribution.minimum, 1)
+    XCTAssertEqual(distribution.p50, 5.5)
+    XCTAssertEqual(distribution.p90, 9)
+    XCTAssertEqual(distribution.maximum, 10)
+  }
+
+  func testLatencyTraceDerivesPipelineDurationsAndNeverStoresBodies() {
+    let origin = Date(timeIntervalSince1970: 10_000)
+    let trace = TutorLatencyTrace(userActionAt: origin)
+    let prompt = PromptPackage(
+      systemInstruction: "system",
+      userContent: "PRIVATE_SOURCE_BODY",
+      outputSchema: "schema",
+      constraints: ["rule"]
+    )
+    trace.markContentResolved(at: origin.addingTimeInterval(0.1))
+    trace.markRequestCreated(requestID: UUID(), at: origin.addingTimeInterval(0.2))
+    trace.markPromptBuilt(
+      prompt,
+      sourceCharacterCount: 19,
+      at: origin.addingTimeInterval(0.3)
+    )
+    trace.markHTTPStarted(at: origin.addingTimeInterval(0.4))
+    trace.markHeadersReceived(at: origin.addingTimeInterval(1.3))
+    trace.markFirstResponseByte(at: origin.addingTimeInterval(1.4))
+    trace.markFirstSSEEvent(at: origin.addingTimeInterval(1.5))
+    trace.markFirstSSEContent(at: origin.addingTimeInterval(1.6))
+    trace.markNetworkCompleted(at: origin.addingTimeInterval(2.4))
+    trace.markDecoded(at: origin.addingTimeInterval(2.5))
+    trace.markValidated(at: origin.addingTimeInterval(2.6))
+    trace.markPresentationReady(at: origin.addingTimeInterval(2.7))
+    trace.markPanelPresented(at: origin.addingTimeInterval(2.8))
+    trace.recordUsage(
+      LLMUsageMetadata(
+        inputTokenCount: 100,
+        outputTokenCount: 50,
+        totalTokenCount: 150
+      )
+    )
+
+    let metrics = trace.snapshot
+    XCTAssertEqual(metrics.currentContentLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.promptBuildLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.requestSetupLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.timeToFirstByte ?? -1, 1, accuracy: 0.001)
+    XCTAssertEqual(metrics.timeToHeaders ?? -1, 0.9, accuracy: 0.001)
+    XCTAssertEqual(metrics.timeToFirstSSEEvent ?? -1, 1.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.timeToFirstModelContent ?? -1, 1.2, accuracy: 0.001)
+    XCTAssertEqual(metrics.generationDuration ?? -1, 0.8, accuracy: 0.001)
+    XCTAssertEqual(metrics.responseTransferDuration ?? -1, 1, accuracy: 0.001)
+    XCTAssertEqual(metrics.decodeLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.validationLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.presentationLatency ?? -1, 0.1, accuracy: 0.001)
+    XCTAssertEqual(metrics.totalTutorLatency ?? -1, 2.8, accuracy: 0.001)
+    XCTAssertEqual(metrics.totalTokens, 150)
+    XCTAssertFalse(String(reflecting: metrics).contains("PRIVATE_SOURCE_BODY"))
+  }
+
+  private func makeController(
+    provider: any LLMProvider
+  ) -> TutorRealDemoController {
+    TutorRealDemoController(providerFactory: { _ in provider })
+  }
+
+  private func configure(
+    _ controller: TutorRealDemoController,
+    source: String = "API 是一组让不同软件互相沟通的约定。"
+  ) {
+    controller.configuration = DebugLLMConfiguration(
+      endpoint: "https://example.test/v1/chat/completions",
+      model: "test-model",
+      apiKey: "runtime-key"
+    )
+    controller.sourceText = source
+  }
+
+  private func waitForTerminalState(
+    _ controller: TutorRealDemoController,
+    timeoutNanoseconds: UInt64 = 1_000_000_000
+  ) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+    while controller.state == .running,
+          DispatchTime.now().uptimeNanoseconds < deadline
+    {
+      try? await Task.sleep(nanoseconds: 2_000_000)
+    }
+    if controller.state == .running {
+      XCTFail("Timed out waiting for demo flow")
+    }
+  }
+
+  private func waitForGenerateCall(_ provider: FakeLLMProvider) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + 1_000_000_000
+    while await provider.generateCallCount == 0,
+          DispatchTime.now().uptimeNanoseconds < deadline
+    {
+      try? await Task.sleep(nanoseconds: 2_000_000)
+    }
+  }
+
+  private func waitForCancelCall(_ provider: FakeLLMProvider) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + 1_000_000_000
+    while await provider.cancelCallCount == 0,
+          DispatchTime.now().uptimeNanoseconds < deadline
+    {
+      try? await Task.sleep(nanoseconds: 2_000_000)
+    }
+  }
+
+  private func waitForBenchmarkTerminalState(
+    _ controller: TutorLatencyBenchmarkController
+  ) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + 2_000_000_000
+    while controller.state == .running,
+          DispatchTime.now().uptimeNanoseconds < deadline
+    {
+      try? await Task.sleep(nanoseconds: 2_000_000)
+    }
+    if controller.state == .running {
+      XCTFail("Timed out waiting for latency benchmark")
+    }
+  }
+
+  private func waitForStreamModelBenchmarkTerminalState(
+    _ controller: TutorStreamModelBenchmarkController,
+    timeoutNanoseconds: UInt64 = 2_000_000_000
+  ) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+    while controller.state == .running,
+          DispatchTime.now().uptimeNanoseconds < deadline
+    {
+      try? await Task.sleep(nanoseconds: 2_000_000)
+    }
+    if controller.state == .running {
+      XCTFail("Timed out waiting for stream/model benchmark")
+    }
+  }
+
+  private func milliseconds(_ duration: TimeInterval?) -> String {
+    duration.map { String(Int(($0 * 1_000).rounded())) } ?? "unavailable"
+  }
+}
+
+private struct BenchmarkProviderFactoryStub: TutorProviderBuilding {
+  let provider: any LLMProvider
+
+  func configurationSnapshot() throws -> TutorProviderConfigurationSnapshot {
+    TutorProviderConfigurationSnapshot(
+      profileID: "benchmark-test",
+      endpoint: URL(string: "https://example.test/v1/chat/completions")!,
+      model: "benchmark-model",
+      responseFormat: .jsonObject,
+      temperature: 0.2,
+      maxOutputTokens: 900,
+      credentialReference: "benchmark-test",
+      credential: RuntimeCredential("runtime-test-placeholder")
+    )
+  }
+
+  func makeProvider() throws -> any LLMProvider { provider }
+
+  func isAvailable() -> Bool { true }
+}
+
+private actor DecoratedTutorDemoProvider: LLMProvider {
+  enum Decoration: Sendable {
+    case usage
+    case longExplanation
+  }
+
+  let base: FakeLLMProvider
+  let decoration: Decoration
+
+  init(base: FakeLLMProvider, decoration: Decoration) {
+    self.base = base
+    self.decoration = decoration
+  }
+
+  func generate(from prompt: PromptPackage) async throws -> RawLLMResponse {
+    let response = try await base.generate(from: prompt)
+    switch decoration {
+    case .usage:
+      return RawLLMResponse(
+        content: response.content,
+        finishReason: response.finishReason,
+        usage: LLMUsageMetadata(
+          inputTokenCount: 12,
+          outputTokenCount: 7,
+          totalTokenCount: 19
+        ),
+        providerMetadata: response.providerMetadata
+      )
+    case .longExplanation:
+      return try responseWithLongExplanation(response)
+    }
+  }
+
+  func stream(
+    from prompt: PromptPackage
+  ) async -> AsyncThrowingStream<RawLLMStreamChunk, Error> {
+    await base.stream(from: prompt)
+  }
+
+  func cancel() async {
+    await base.cancel()
+  }
+
+  private func responseWithLongExplanation(
+    _ response: RawLLMResponse
+  ) throws -> RawLLMResponse {
+    guard
+      let data = response.content.data(using: .utf8),
+      var root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+      var outcome = root["outcome"] as? [String: Any],
+      var lesson = outcome["lesson"] as? [String: Any]
+    else {
+      throw LLMProviderError.invalidResponse
+    }
+    lesson["plainExplanation"] = String(repeating: "中", count: 1_500)
+    outcome["lesson"] = lesson
+    root["outcome"] = outcome
+    let transformed = try JSONSerialization.data(
+      withJSONObject: root,
+      options: [.sortedKeys]
+    )
+    guard let content = String(data: transformed, encoding: .utf8) else {
+      throw LLMProviderError.invalidResponse
+    }
+    return RawLLMResponse(
+      content: content,
+      finishReason: response.finishReason,
+      usage: response.usage,
+      providerMetadata: response.providerMetadata
+    )
+  }
+}
+#endif

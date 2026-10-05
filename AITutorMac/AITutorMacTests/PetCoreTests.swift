@@ -1,8 +1,61 @@
+import AppKit
+import SwiftUI
 import XCTest
 
 @testable import AITutorMac
 
 final class PetCoreTests: XCTestCase {
+  @MainActor
+  func testPetSingleClickRespondsImmediatelyWithoutWaitingForDoubleClick() throws {
+    let view = PetInteractionView(rootView: Text("花花老师"))
+    var clickCount = 0
+    view.onSingleClick = { clickCount += 1 }
+    let mouseDown = try XCTUnwrap(
+      NSEvent.mouseEvent(
+        with: .leftMouseDown,
+        location: .zero,
+        modifierFlags: [],
+        timestamp: 0,
+        windowNumber: 0,
+        context: nil,
+        eventNumber: 1,
+        clickCount: 1,
+        pressure: 1
+      )
+    )
+    let mouseUp = try XCTUnwrap(
+      NSEvent.mouseEvent(
+        with: .leftMouseUp,
+        location: .zero,
+        modifierFlags: [],
+        timestamp: 0,
+        windowNumber: 0,
+        context: nil,
+        eventNumber: 2,
+        clickCount: 1,
+        pressure: 0
+      )
+    )
+
+    view.mouseDown(with: mouseDown)
+    view.mouseUp(with: mouseUp)
+
+    XCTAssertEqual(clickCount, 1)
+  }
+
+  @MainActor
+  func testTutorVisibilityIncludesRoleSideCompanion() {
+    let state = AppState()
+    XCTAssertFalse(state.isTutorVisible)
+
+    state.isCompanionVisible = true
+    XCTAssertTrue(state.isTutorVisible)
+
+    state.isCompanionVisible = false
+    state.isPanelVisible = true
+    XCTAssertTrue(state.isTutorVisible)
+  }
+
   func testScaleClampUsesConfiguredSafetyRange() {
     let configuration = PetConfiguration.default
 

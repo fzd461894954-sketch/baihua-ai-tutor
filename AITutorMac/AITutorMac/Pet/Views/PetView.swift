@@ -3,35 +3,56 @@ import SwiftUI
 
 struct PetView: View {
   let pet: PetModel
+  let petImage: NSImage?
   let stateController: PetStateController
+  let speechInputController: SpeechInputController
+  let tutorNotificationCenter: TutorPetNotificationCenter
 
   var body: some View {
-    ZStack(alignment: .topTrailing) {
+    ZStack {
       petArtwork
 
-      if let symbolName = stateController.currentState.badgeSystemImageName {
-        PetStateBadgeView(
-          state: stateController.currentState,
-          symbolName: symbolName
-        )
-        .padding(4)
+      VStack {
+        HStack {
+          if speechInputController.isMicrophoneActive {
+            VoiceInputBadgeView()
+          }
+
+          Spacer()
+
+          if let symbolName = stateController.currentState.badgeSystemImageName {
+            PetStateBadgeView(
+              state: stateController.currentState,
+              symbolName: symbolName
+            )
+          } else if tutorNotificationCenter.hasUnreadTutorPresentation,
+                    !speechInputController.isMicrophoneActive {
+            TutorUnreadBadgeView()
+          }
+        }
+        Spacer()
       }
+      .padding(4)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .contentShape(Rectangle())
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("桌面吉祥物，\(pet.name)")
-    .accessibilityValue(stateController.currentState.displayName)
-    .accessibilityHint("单击查看当前状态，双击打开教学窗口")
+    .accessibilityLabel("桌面老师，\(pet.name)")
+    .accessibilityValue(accessibilityValue)
+    .accessibilityHint("单击展开或收起花花老师，可以直接看解释、打字或说话提问")
+  }
+
+  private var accessibilityValue: String {
+    if tutorNotificationCenter.hasUnreadTutorPresentation {
+      return "\(stateController.currentState.displayName)，有新的解释"
+    }
+    return stateController.currentState.displayName
   }
 
   @ViewBuilder
   private var petArtwork: some View {
-    if pet.type == .staticImage,
-      let image = NSImage(named: NSImage.Name(pet.assetName)),
-      image.isValid
-    {
-      Image(nsImage: image)
+    if pet.type == .staticImage, let petImage, petImage.isValid {
+      Image(nsImage: petImage)
         .resizable()
         .interpolation(.high)
         .antialiased(true)
@@ -42,13 +63,50 @@ struct PetView: View {
   }
 }
 
+private struct TutorUnreadBadgeView: View {
+  var body: some View {
+    Circle()
+      .fill(.purple)
+      .frame(width: 12, height: 12)
+      .overlay {
+        Circle().stroke(.white.opacity(0.9), lineWidth: 1.5)
+      }
+      .shadow(
+        color: AppShadow.badge.color,
+        radius: AppShadow.badge.radius,
+        y: AppShadow.badge.y
+      )
+      .accessibilityHidden(true)
+  }
+}
+
+private struct VoiceInputBadgeView: View {
+  var body: some View {
+    Image(systemName: "mic.fill")
+      .font(.system(size: 13, weight: .bold))
+      .foregroundStyle(.white)
+      .frame(width: 27, height: 27)
+      .background(AppColors.listeningAttention, in: Circle())
+      .overlay {
+        Circle()
+          .stroke(.white.opacity(0.8), lineWidth: 1.5)
+      }
+      .shadow(
+        color: AppShadow.badge.color,
+        radius: AppShadow.badge.radius,
+        y: AppShadow.badge.y
+      )
+      .accessibilityLabel("正在使用麦克风")
+  }
+}
+
 struct PetBubble: Equatable {
   let title: String
   let detail: String?
 
   static let welcome = PetBubble(
     title: "你好，我是你的 AI 老师。",
-    detail: "双击我可以打开教学窗口。"
+    detail: "点一下我，就能在这里看解释或直接提问。"
   )
 
   static let understanding = PetBubble(title: "我正在理解当前内容。", detail: nil)
@@ -78,25 +136,46 @@ struct PetBubbleView: View {
   let bubble: PetBubble
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 5) {
-      Text(bubble.title)
-        .font(.system(size: 14, weight: .semibold))
+    BubbleChrome {
+      VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+        Text(bubble.title)
+          .font(AppTypography.bubbleTitle)
 
-      if let detail = bubble.detail {
-        Text(detail)
-          .font(.system(size: 12))
-          .foregroundStyle(.secondary)
+        if let detail = bubble.detail {
+          Text(detail)
+            .font(AppTypography.bubbleBody)
+            .foregroundStyle(.secondary)
+        }
       }
     }
-    .padding(.horizontal, 14)
-    .padding(.vertical, 11)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 14, style: .continuous)
-        .stroke(.primary.opacity(0.08), lineWidth: 1)
+    .padding(AppSpacing.xxs)
+  }
+}
+
+struct PetTutorBubbleView: View {
+  let notification: PetTutorNotification
+  let onOpenTutor: () -> Void
+
+  var body: some View {
+    BubbleChrome {
+      VStack(alignment: .leading, spacing: AppSpacing.xs) {
+        Text(notification.title)
+          .font(AppTypography.bubbleTitle)
+
+        Text(notification.message)
+          .font(AppTypography.bubbleBody)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+
+        HStack {
+          Spacer()
+          Button("查看解释", action: onOpenTutor)
+            .controlSize(.small)
+            .buttonStyle(.borderedProminent)
+        }
+      }
     }
-    .padding(5)
+    .padding(AppSpacing.xxs)
   }
 }
 
@@ -114,29 +193,16 @@ private struct PetStateBadgeView: View {
         Circle()
           .stroke(.white.opacity(0.8), lineWidth: 1.5)
       }
-      .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+      .shadow(
+        color: AppShadow.badge.color,
+        radius: AppShadow.badge.radius,
+        y: AppShadow.badge.y
+      )
       .accessibilityHidden(true)
   }
 
   private var badgeColor: Color {
-    switch state {
-    case .idle:
-      return .clear
-    case .watching:
-      return .blue
-    case .thinking:
-      return .purple
-    case .speaking:
-      return .indigo
-    case .needsInput:
-      return .cyan
-    case .warning:
-      return .orange
-    case .success:
-      return .green
-    case .error:
-      return .red
-    }
+    AppColors.petState(state)
   }
 }
 
@@ -150,10 +216,29 @@ private struct PetAssetPlaceholder: View {
       Text(petName)
         .font(.system(size: 13, weight: .semibold))
       Text("等待透明素材")
-        .font(.system(size: 10))
+        .font(.caption)
         .foregroundStyle(.secondary)
     }
-    .foregroundStyle(.purple)
-    .padding(8)
+    .foregroundStyle(AppColors.brand)
+    .padding(AppSpacing.xs)
   }
 }
+
+#if DEBUG
+#Preview("Pet Bubble Matrix") {
+  VStack(spacing: AppSpacing.md) {
+    PetBubbleView(bubble: .welcome)
+      .frame(width: 300, height: 90)
+    PetBubbleView(bubble: .warning)
+      .frame(width: 300, height: 70)
+  }
+  .padding()
+}
+
+#Preview("Pet Bubble Dark") {
+  PetBubbleView(bubble: .welcome)
+    .frame(width: 300, height: 90)
+    .padding()
+    .preferredColorScheme(.dark)
+}
+#endif

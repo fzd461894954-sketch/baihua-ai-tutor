@@ -1,93 +1,330 @@
 import SwiftUI
 
+enum TutorPanelLayoutPolicy {
+  static let glossaryStartsExpanded = false
+}
+
 struct FloatingPanelView: View {
+  let contentStore: TutorPanelContentStore
+  let actionHandler: TutorPanelActionHandler
+  let tutorVoiceCoordinator: TutorVoiceCoordinator
+
   var body: some View {
-    VStack(alignment: .leading, spacing: 20) {
-      header
-      status
-
+    VStack(spacing: 0) {
+      ScrollView {
+        Group {
+          switch contentStore.state {
+          case let .empty(availability): emptyContent(availability)
+          case .loading: loadingContent
+          case let .presentation(presentation): presentationContent(presentation)
+          case let .error(error): errorContent(error)
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(24)
+      }
+#if DEBUG
       Divider()
-
-      teachingSection(
-        title: "AI 正在做什么",
-        placeholder: "等待 AI 内容……"
-      )
-
-      Divider()
-
-      teachingSection(
-        title: "为什么这样做",
-        placeholder: "等待解释……"
-      )
-
-      Divider()
-
-      teachingSection(
-        title: "你需要做什么",
-        placeholder: "暂时无需操作。"
-      )
-
-      Spacer(minLength: 0)
-      disabledTeachingActions
+      debugFixturePicker.padding(.horizontal, 16).padding(.vertical, 10)
+#endif
     }
-    .padding(24)
     .frame(minWidth: 360, minHeight: 480)
     .background(.ultraThinMaterial)
   }
 
-  private var header: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text("白话 AI")
-        .font(.title2.bold())
-      Text("AI 实时教学伴侣")
-        .font(.headline)
-        .foregroundStyle(.secondary)
-      Text("这里以后会把 AI 的复杂回答，\n翻译成你能理解的大白话。")
-        .font(.body)
-        .foregroundStyle(.secondary)
-        .fixedSize(horizontal: false, vertical: true)
+  private func emptyContent(_ availability: TutorPanelActionAvailability) -> some View {
+    VStack(alignment: .leading, spacing: 24) {
+      tutorHeader("花花老师", subtitle: "AI 实时教学伴侣")
+      VStack(alignment: .leading, spacing: 10) {
+        Text("我可以把 AI 的复杂内容，\n用更容易理解的方式讲给你听。")
+          .foregroundStyle(.secondary).textSelection(.enabled)
+        if let message = availability.unavailableMessage {
+          Label(message, systemImage: "info.circle")
+            .font(.footnote).foregroundStyle(.secondary).textSelection(.enabled)
+        }
+      }
+      if availability.isAvailable {
+        Button("解释当前内容") { actionHandler.handle(.explainCurrentContent) }
+          .buttonStyle(.borderedProminent)
+        Label("点击解释或提问时，会自动读取刚才使用的窗口。", systemImage: "viewfinder")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .textSelection(.enabled)
+      } else {
+        Button("打开 AI 模型设置") { actionHandler.handle(.openModelSettings) }
+          .buttonStyle(.borderedProminent)
+      }
+      if availability.isAvailable {
+        Label("解释内容会发送给当前配置的 AI 模型服务。", systemImage: "lock.shield")
+          .font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+      }
     }
   }
 
-  private var status: some View {
-    HStack(spacing: 8) {
-      Circle()
-        .fill(.green)
-        .frame(width: 8, height: 8)
-      Text("状态")
-        .font(.subheadline.weight(.semibold))
-      Text("准备就绪")
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
+  private var loadingContent: some View {
+    VStack(alignment: .leading, spacing: 28) {
+      tutorHeader("花花老师", subtitle: "正在理解当前内容……")
+      HStack(spacing: 12) {
+        ProgressView().controlSize(.small)
+        Text("正在组织一个好懂的解释。")
+          .foregroundStyle(.secondary).textSelection(.enabled)
+      }
+      Button("取消") { actionHandler.handle(.dismissCurrentPresentation) }
     }
-    .accessibilityElement(children: .combine)
   }
 
-  private func teachingSection(title: String, placeholder: String) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text(title)
-        .font(.headline)
-      Text(placeholder)
-        .font(.body)
-        .foregroundStyle(.secondary)
+  @ViewBuilder private func presentationContent(_ value: TutorPresentationModel) -> some View {
+    switch value.outcome {
+    case .lesson:
+      TutorLessonView(
+        presentation: value,
+        actionHandler: actionHandler,
+        tutorVoiceCoordinator: tutorVoiceCoordinator
+      )
+        .id(value.responseMetadata.responseID)
+    case .needsMoreContext:
+      statusContent(value, icon: "text.badge.plus", tint: .blue,
+                    actionTitle: "重新解释当前内容", action: .retryCurrentContent)
+    case .blocked:
+      statusContent(value, icon: blockedIcon(value.blockReason), tint: .orange,
+                    actionTitle: "知道了", action: .dismissCurrentPresentation)
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
   }
 
-  private var disabledTeachingActions: some View {
-    HStack(spacing: 8) {
-      Button("我还是没懂") {}
-        .disabled(true)
-      Button("举个例子") {}
-        .disabled(true)
-      Button("讲深一点") {}
-        .disabled(true)
+  private func statusContent(
+    _ value: TutorPresentationModel, icon: String, tint: Color,
+    actionTitle: String, action: TutorPanelActionIntent
+  ) -> some View {
+    VStack(alignment: .leading, spacing: 22) {
+      tutorHeader("花花老师", subtitle: "当前内容")
+      Label { Text(value.title).font(.title3.weight(.semibold)) }
+        icon: { Image(systemName: icon).foregroundStyle(tint) }
+      Text(value.plainExplanation).lineSpacing(4).textSelection(.enabled)
+      if let suggestion = value.suggestedAction {
+        TutorPanelCard(title: "可以这样做", icon: "arrow.right.circle") {
+          Text(suggestion).textSelection(.enabled)
+        }
+      }
+      Button(actionTitle) { actionHandler.handle(action) }.buttonStyle(.borderedProminent)
     }
-    .frame(maxWidth: .infinity, alignment: .center)
+  }
+
+  private func errorContent(_ error: TutorPanelErrorPresentation) -> some View {
+    VStack(alignment: .leading, spacing: 22) {
+      tutorHeader("花花老师", subtitle: "解释遇到问题")
+      Label { Text(error.title).font(.title3.weight(.semibold)) }
+        icon: { Image(systemName: "exclamationmark.triangle").foregroundStyle(.red) }
+      Text(error.message).foregroundStyle(.secondary).textSelection(.enabled)
+      HStack(spacing: 10) {
+        switch error.recoveryAction {
+        case .retry:
+          Button("重新解释") { actionHandler.handle(.retryCurrentContent) }
+            .buttonStyle(.borderedProminent)
+        case .openModelSettings:
+          Button("打开 AI 模型设置") { actionHandler.handle(.openModelSettings) }
+            .buttonStyle(.borderedProminent)
+        case .openAccessibilitySettings:
+          Button("打开辅助功能设置") {
+            actionHandler.handle(.openAccessibilitySettings)
+          }
+          .buttonStyle(.borderedProminent)
+        }
+        Button("稍后再说") { actionHandler.handle(.dismissCurrentPresentation) }
+      }
+    }
+  }
+
+  private func tutorHeader(_ title: String, subtitle: String) -> some View {
+    VStack(alignment: .leading, spacing: 5) {
+      Text(title).font(.title2.bold())
+      Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+    }
+  }
+
+  private func blockedIcon(_ reason: TutorBlockReason?) -> String {
+    switch reason {
+    case .privacyRisk: return "hand.raised.fill"
+    case .unsafeInstruction: return "shield.fill"
+    case .invalidInput, .unsupported, .none: return "exclamationmark.shield.fill"
+    }
+  }
+
+#if DEBUG
+  private var debugFixturePicker: some View {
+    HStack {
+      Text("DEBUG 状态").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+      Spacer()
+      Menu("切换案例") {
+        ForEach(TutorPanelDebugFixture.allCases) { fixture in
+          Button(fixture.displayName) { actionHandler.handle(.showDebugFixture(fixture)) }
+        }
+      }.menuStyle(.borderlessButton).fixedSize()
+    }
+  }
+#endif
+}
+
+private struct TutorLessonView: View {
+  let presentation: TutorPresentationModel
+  let actionHandler: TutorPanelActionHandler
+  let tutorVoiceCoordinator: TutorVoiceCoordinator
+  @State private var isGlossaryExpanded = TutorPanelLayoutPolicy.glossaryStartsExpanded
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 24) {
+      VStack(alignment: .leading, spacing: 6) {
+        Text("花花老师").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+        Text(presentation.title).font(.title2.bold()).textSelection(.enabled)
+      }
+      Text(presentation.plainExplanation).lineSpacing(5).textSelection(.enabled)
+      voiceButton
+
+      if !presentation.keyPoints.isEmpty {
+        section("记住这几点") {
+          VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(presentation.keyPoints.enumerated()), id: \.offset) { index, point in
+              HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("\(index + 1)").font(.caption.bold()).foregroundStyle(.white)
+                  .frame(width: 20, height: 20).background(Circle().fill(Color.accentColor))
+                Text(point).textSelection(.enabled)
+              }
+            }
+          }
+        }
+      }
+      if let analogy = presentation.analogy {
+        TutorPanelCard(title: "打个比方", icon: "lightbulb") {
+          Text(analogy).textSelection(.enabled)
+        }
+      }
+      if let example = presentation.example {
+        TutorPanelCard(title: "举个例子", icon: "sparkles") {
+          Text(example).textSelection(.enabled)
+        }
+      }
+      if !presentation.terms.isEmpty {
+        DisclosureGroup(isExpanded: $isGlossaryExpanded) {
+          VStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(presentation.terms.enumerated()), id: \.offset) { _, term in
+              VStack(alignment: .leading, spacing: 3) {
+                Text(term.term).font(.subheadline.weight(.semibold)).textSelection(.enabled)
+                Text(term.plainDefinition).foregroundStyle(.secondary).textSelection(.enabled)
+              }
+            }
+          }.padding(.top, 10)
+        } label: {
+          Label("查看术语（\(presentation.terms.count)）", systemImage: "character.book.closed")
+            .font(.headline)
+        }
+      }
+      if !presentation.caveats.isEmpty {
+        TutorPanelCard(title: "小提醒", icon: "exclamationmark.circle", tint: .orange) {
+          VStack(alignment: .leading, spacing: 7) {
+            ForEach(Array(presentation.caveats.enumerated()), id: \.offset) { _, value in
+              Text("• \(value)").textSelection(.enabled)
+            }
+          }
+        }
+      }
+      if let question = presentation.checkQuestion {
+        TutorPanelCard(title: "想一想", icon: "questionmark.bubble") {
+          Text(question).fontWeight(.medium).textSelection(.enabled)
+        }
+      }
+      if presentation.didTruncateContent {
+        Label("内容已适当精简，保留了主要信息。", systemImage: "text.badge.minus")
+          .font(.footnote).foregroundStyle(.secondary).textSelection(.enabled)
+      }
+      Button("结束本次解释") { actionHandler.handle(.dismissCurrentPresentation) }
+    }
+  }
+
+  @ViewBuilder
+  private var voiceButton: some View {
+    if tutorVoiceCoordinator.isPlaying(presentation) {
+      Button {
+        actionHandler.handle(.stopTutorVoice)
+      } label: {
+        Label("停止朗读", systemImage: "stop.fill")
+      }
+      .buttonStyle(.borderedProminent)
+    } else {
+      Button {
+        actionHandler.handle(.playTutorVoice(presentation))
+      } label: {
+        Label("讲给我听", systemImage: "speaker.wave.2.fill")
+      }
+      .buttonStyle(.borderedProminent)
+      .disabled(!tutorVoiceCoordinator.isAvailable(for: presentation))
+    }
+  }
+
+  private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text(title).font(.headline)
+      content()
+    }.frame(maxWidth: .infinity, alignment: .leading)
   }
 }
 
-#Preview {
-  FloatingPanelView()
+private struct TutorPanelCard<Content: View>: View {
+  let title: String
+  let icon: String
+  let tint: Color
+  let content: Content
+
+  init(title: String, icon: String, tint: Color = .accentColor,
+       @ViewBuilder content: () -> Content) {
+    self.title = title; self.icon = icon; self.tint = tint; self.content = content()
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 9) {
+      Label(title, systemImage: icon).font(.headline).foregroundStyle(tint)
+      content.lineSpacing(3)
+    }
+    .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.quaternary.opacity(0.7)))
+  }
+}
+
+#if DEBUG
+private struct TutorPanelFixturePreview: View {
+  let fixture: TutorPanelDebugFixture
+
+  var body: some View {
+    let store = makeStore()
+    let petStateController = PetStateController()
+    let voiceController = VoiceController(petStateController: petStateController)
+    let voiceCoordinator = TutorVoiceCoordinator(voiceController: voiceController)
+    FloatingPanelView(
+      contentStore: store,
+      actionHandler: .unavailable,
+      tutorVoiceCoordinator: voiceCoordinator
+    )
     .frame(width: 400, height: 600)
+  }
+
+  private func makeStore() -> TutorPanelContentStore {
+    let store = TutorPanelContentStore(availability: .available)
+    switch fixture {
+    case .empty: break
+    case .loading: store.setLoading()
+    case .lesson: store.present(TutorPanelPresentationFixtures.apiLesson)
+    case .needsMoreContext: store.present(TutorPanelPresentationFixtures.needsMoreContext)
+    case .blocked: store.present(TutorPanelPresentationFixtures.blocked)
+    case .error: store.presentError()
+    case .longLesson: store.present(TutorPanelPresentationFixtures.longLesson)
+    }
+    return store
+  }
 }
+
+#Preview("Tutor Panel · Empty") { TutorPanelFixturePreview(fixture: .empty) }
+#Preview("Tutor Panel · Loading") { TutorPanelFixturePreview(fixture: .loading) }
+#Preview("Tutor Panel · Lesson") { TutorPanelFixturePreview(fixture: .lesson) }
+#Preview("Tutor Panel · Needs Context") { TutorPanelFixturePreview(fixture: .needsMoreContext) }
+#Preview("Tutor Panel · Blocked") { TutorPanelFixturePreview(fixture: .blocked) }
+#Preview("Tutor Panel · Error") { TutorPanelFixturePreview(fixture: .error) }
+#Preview("Tutor Panel · Long Lesson") { TutorPanelFixturePreview(fixture: .longLesson) }
+#endif
